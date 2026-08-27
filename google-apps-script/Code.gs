@@ -51,7 +51,10 @@ function teacherData_(ss) { return { submissions: ss.getSheetByName(GROUP_DATA_S
 function normalizeSubmission_(row) { return { id: row[0], groupNumber: "Group " + row[1], zone: row[2], type: row[3], data: JSON.parse(row[4] || "{}"), submittedAt: row[5], studentName: row[6], memberNumber: Number(row[7]) }; }
 function saveGroupSubmission_(ss, session, payload) {
   if (session.role !== "student") throw new Error("只限學生提交"); const zone = String(payload.zone || "").toUpperCase(); const type = String(payload.type || ""); if (["A", "B", "C", "D"].indexOf(zone) === -1 || !type) throw new Error("資料不完整");
-  const lock = LockService.getDocumentLock(); lock.waitLock(10000);
+  const lock = LockService.getDocumentLock();
+  // Do not leave a phone hanging when several groups submit together. The web app
+  // queues and retries this short "busy" response automatically.
+  if (!lock.tryLock(2000)) throw new Error("同步服務繁忙，系統會自動重試");
   try { const id = "group-" + session.groupNumber + "-" + zone + "-" + type; const dataJson = JSON.stringify(payload.data || {}); const now = new Date().toISOString(); const sheet = ss.getSheetByName(GROUP_DATA_SHEET); const values = sheet.getDataRange().getValues(); const rowNumber = values.findIndex(function(row, i) { return i > 0 && String(row[0]) === id; }); const row = [id, session.groupNumber, zone, type, dataJson, now, session.name, session.memberNumber];
     if (rowNumber > 0) sheet.getRange(rowNumber + 1, 1, 1, row.length).setValues([row]); else sheet.appendRow(row); ss.getSheetByName(GROUP_HISTORY_SHEET).appendRow([Utilities.getUuid(), id, session.groupNumber, zone, type, dataJson, now, session.name, session.memberNumber]); return { submission: normalizeSubmission_(row) };
   } finally { lock.releaseLock(); }
