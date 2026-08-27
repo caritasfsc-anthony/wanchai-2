@@ -13,6 +13,7 @@ const SESSION_KEY = "fieldwork_group_session";
 const PENDING_SUBMISSIONS_KEY = "fieldwork_pending_submissions";
 const GROUP_COUNT = 8;
 const MEMBER_COUNT = 5;
+const STUDENT_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 type PendingSubmission = { id: string; groupNumber: number; zone: ZoneId; type: string; data: unknown; queuedAt: string; attempts: number };
 let pendingSyncTimer: number | undefined;
 let pendingSyncRunning = false;
@@ -130,7 +131,7 @@ if (typeof window !== "undefined" && session()?.role === "student") startPending
 export async function studentLogin(groupNumber: number, memberNumber: number) {
   // Group/member selection has no personal password. Keep it fully local so a
   // slow school network cannot prevent students from starting their fieldwork.
-  const student: Session = { role: "student", groupNumber, memberNumber, name: `成員${memberNumber}`, expiresAt: Date.now() + SESSION_TTL_MS };
+  const student: Session = { role: "student", groupNumber, memberNumber, name: `成員${memberNumber}`, expiresAt: Date.now() + STUDENT_SESSION_TTL_MS };
   const token = `student-local-${groupNumber}-${memberNumber}-${Date.now()}`;
   setAuthToken(token); setRole("student"); localStorage.setItem(SESSION_KEY, JSON.stringify(student)); startPendingSync(); return { token, student: { id: `group-${student.groupNumber}-member-${student.memberNumber}`, name: student.name, groupNumber: `Group ${student.groupNumber}`, memberNumber: student.memberNumber } };
 }
