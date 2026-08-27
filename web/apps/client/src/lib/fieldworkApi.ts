@@ -2,7 +2,7 @@ import { setAuthToken, clearAuthToken, getAuthToken } from "@/lib/auth";
 import { tasks, type ZoneId } from "@/data/fieldwork";
 import { initializeApp } from "firebase/app";
 import { getAuth, signInAnonymously } from "firebase/auth";
-import { collection, doc, getDocs, getFirestore, serverTimestamp, setDoc } from "firebase/firestore";
+import { collection, collectionGroup, deleteDoc, doc, getDocs, getFirestore, serverTimestamp, setDoc } from "firebase/firestore";
 
 export type Role = "student" | "teacher";
 export type FieldworkSubmission = { id: string; studentId: string; zone: ZoneId; type: string; data: Record<string, unknown>; submittedAt: string; studentName?: string; groupNumber?: string; memberNumber?: number };
@@ -159,11 +159,11 @@ export async function submitData(zone: ZoneId, type: string, data: unknown) {
   const others = allSubmissions().filter(item => item.id !== record.id); cache([record, ...others]); return { submission: record };
 }
 
-export async function exportGroupDataToGoogleSheet() { const result = await remoteRead<{ count: number }>({ action: "export", ...authPayload() }); return { count: result.count || 0 }; }
-export async function clearAllFieldworkData() { return remoteRead<{ cleared: boolean }>({ action: "clear-all", ...authPayload() }); }
+export async function exportGroupDataToGoogleSheet() { const { submissions } = await getTeacherSubmissions(); for (const submission of submissions) await remoteWrite({ action: "legacy-submit", submission }); return { count: submissions.length }; }
+export async function clearAllFieldworkData() { await ensureFirebaseAuth(); const records = await getDocs(collectionGroup(firestore, "submissions")); await Promise.all(records.docs.map(item => deleteDoc(item.ref))); return remoteRead<{ cleared: boolean }>({ action: "clear-all", ...authPayload() }); }
 export type FieldworkRevision = FieldworkSubmission & { submissionId: string; revisedAt: string };
 export async function getGroups() { const { submissions } = await getTeacherSubmissions(); const groups = Array.from({ length: GROUP_COUNT }, (_, index) => { const groupNumber = `Group ${index + 1}`; const groupSubs = submissions.filter(s => s.groupNumber === groupNumber); const matrix: Record<string, Record<string, boolean>> = {}; for (const zone of ["A", "B", "C", "D"]) { matrix[zone] = {}; for (const task of tasks) matrix[zone][apiTypeForTask(task.path)] = groupSubs.some(s => s.zone === zone && s.type === apiTypeForTask(task.path)); } return { studentId: `group-${index + 1}`, groupNumber, name: "共用資料", matrix, zones: matrix, lastActive: groupSubs[0]?.submittedAt ?? "" }; }); return { groups }; }
-export async function getTeacherSubmissions() { const result = await remoteRead<{ submissions: any[] }>({ action: "teacher-data", ...authPayload() }); return { submissions: (result.submissions || []).map(normalize).sort((a: FieldworkSubmission, b: FieldworkSubmission) => b.submittedAt.localeCompare(a.submittedAt)) }; }
+export async function getTeacherSubmissions() { await ensureFirebaseAuth(); const result = await getDocs(collectionGroup(firestore, "submissions")); return { submissions: result.docs.map(item => normalize({ id: item.id, ...item.data() })).sort((a: FieldworkSubmission, b: FieldworkSubmission) => b.submittedAt.localeCompare(a.submittedAt)) }; }
 export async function getTeacherSubmissionHistory(id: string) { const current = (await getTeacherSubmissions()).submissions.find(item => item.id === id); return { revisions: current ? [{ ...current, submissionId: current.id, revisedAt: current.submittedAt }] : [] }; }
 export async function deleteTeacherSubmission() { throw new Error("2.0 不提供逐項刪除；請在教師頁使用「清空本次資料」。"); }
 export function saveLocal(zone: ZoneId, task: string, data: unknown) { writeDraft(activeStorageKey(zone, task), data); return true; }
