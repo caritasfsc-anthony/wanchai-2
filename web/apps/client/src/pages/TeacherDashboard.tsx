@@ -30,7 +30,8 @@ export default function TeacherDashboard(){
   useEffect(()=>{ loadDashboard().catch(()=>{ setGroups([]); setSubs([]); }); },[]);
   useEffect(()=>{ if(activeTab==="photos" && !photosLoaded){ getTeacherPhotos().then(p=>{ setPhotos(p); setPhotosLoaded(true); }).catch(()=>{}); } },[activeTab, photosLoaded]);
 
-  const completed=useMemo(()=>groups.reduce((a,g)=>a+Object.values(g.zones||{}).filter(Boolean).length,0),[groups]);
+  const activeGroups = useMemo(()=>groups.filter(g=>zones.some(zone=>apiTaskTypes.some(type=>Boolean(g.matrix?.[zone]?.[type])))).length,[groups]);
+  const completed=useMemo(()=>groups.reduce((total,g)=>total+zones.filter(zone=>apiTaskTypes.every(type=>Boolean(g.matrix?.[zone]?.[type]))).length,0),[groups]);
   const today=new Date().toISOString().slice(0,10);
   const allGroupNumbers = useMemo(()=>[...new Set(groups.map(g=>g.groupNumber))].sort(),[groups]);
   const taskLabel = (apiType: string) => { const path = taskForApiType(apiType); const item = tasks.find(x => x.path === path); return item ? t(item.key) : apiType; };
@@ -65,7 +66,7 @@ export default function TeacherDashboard(){
 
   return <Page>
     {/* @section: teacher-dashboard-heading */}<div className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-3xl font-black text-primary">{t("dashboard")}</h1><div className="flex gap-2"><button type="button" disabled={Boolean(actionBusy)} onClick={exportToSheet} className="primary-btn min-h-[44px]">{actionBusy === "export" ? "…" : (lang === "zh" ? "送出到 Google Sheet" : "Send to Google Sheet")}</button><button type="button" disabled={Boolean(actionBusy)} onClick={clearAll} className="min-h-[44px] rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-60">{actionBusy === "clear" ? "…" : (lang === "zh" ? "清除已有學生資料" : "Clear existing student data")}</button></div></div>
-    <div className="mt-4 grid grid-cols-3 gap-2">{([[t("totalGroups"),groups.length],[t("zonesCompleted"),completed],[t("submissionsToday"),subs.filter(s=>String(s.submittedAt).startsWith(today)).length]] as [string,number][]).map(([k,v])=><div className="field-card text-center" key={k}><p className="text-xs text-muted-foreground">{k}</p><b className="text-2xl text-primary">{v}</b></div>)}</div>
+    <div className="mt-4 grid grid-cols-3 gap-2">{([[(lang === "zh" ? "已有資料小組" : "Groups with data"),activeGroups],[t("zonesCompleted"),completed],[t("submissionsToday"),subs.filter(s=>String(s.submittedAt).startsWith(today)).length]] as [string,number][]).map(([k,v])=><div className="field-card text-center" key={k}><p className="text-xs text-muted-foreground">{k}</p><b className="text-2xl text-primary">{v}</b></div>)}</div>
     <div className="mt-4 grid grid-cols-3 gap-1 rounded-2xl bg-muted p-1">{([["overview",t("completionMatrix")],["data",t("submissions")],["photos",t("photoGallery")]] as [string,string][]).map(([id,label])=><button key={id} onClick={()=>setActiveTab(id as any)} className={`min-h-[44px] rounded-xl py-2 text-sm font-semibold transition ${activeTab===id?"bg-white text-primary shadow-sm":"text-muted-foreground hover:text-foreground"}`}>{label}</button>)}</div>
 
     {activeTab==="overview" && <section className="mt-4 space-y-3">
