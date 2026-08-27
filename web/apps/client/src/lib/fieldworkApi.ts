@@ -72,6 +72,13 @@ async function remoteWrite(payload: Record<string, unknown>) {
   await fetch(endpoint(), { method: "POST", mode: "no-cors", cache: "no-store", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
 }
 function authPayload() { const token = getAuthToken(); if (!token) throw new Error("登入已過期，請重新登入"); return { token }; }
+function isLocalStudentToken(token = getAuthToken()) { return token.startsWith("student-local-"); }
+async function ensureStudentServerSession() {
+  const s = session();
+  if (!s || s.role !== "student" || !isLocalStudentToken()) return;
+  const result = await remoteReadWithRetry<{ token: string; session: Session }>({ action: "login", role: "student", groupNumber: s.groupNumber, memberNumber: s.memberNumber });
+  setAuthToken(result.token);
+}
 
 function pendingSubmissions() { return readJson<PendingSubmission[]>(PENDING_SUBMISSIONS_KEY, []); }
 function savePendingSubmissions(items: PendingSubmission[]) { writeJson(PENDING_SUBMISSIONS_KEY, items); }
@@ -96,6 +103,7 @@ export async function syncPendingSubmissions() {
   if (pendingSyncRunning || !navigator.onLine || !pendingForCurrentGroup.length) return false;
   pendingSyncRunning = true;
   try {
+    await ensureStudentServerSession();
     // Work one item at a time so a busy Google Sheet never receives competing writes from this phone.
     const next = pendingForCurrentGroup[0];
     try {
@@ -120,10 +128,11 @@ function startPendingSync() {
 if (typeof window !== "undefined" && session()?.role === "student") startPendingSync();
 
 export async function studentLogin(groupNumber: number, memberNumber: number) {
-  // Fieldwork Wi-Fi can briefly drop while a large class signs in. Retry transient
-  // JSONP/network errors, but never retry an invalid identity.
-  const result = await remoteReadWithRetry<{ token: string; session: Session }>({ action: "login", role: "student", groupNumber, memberNumber });
-  setAuthToken(result.token); setRole("student"); localStorage.setItem(SESSION_KEY, JSON.stringify(result.session)); startPendingSync(); return { token: result.token, student: { id: `group-${result.session.groupNumber}-member-${result.session.memberNumber}`, name: result.session.name, groupNumber: `Group ${result.session.groupNumber}`, memberNumber: result.session.memberNumber } };
+  // Group/member selection has no personal password. Keep it fully local so a
+  // slow school network cannot prevent students from starting their fieldwork.
+  const student: Session = { role: "student", groupNumber, memberNumber, name: `成員${memberNumber}`, expiresAt: Date.now() + SESSION_TTL_MS };
+  const token = `student-local-${groupNumber}-${memberNumber}-${Date.now()}`;
+  setAuthToken(token); setRole("student"); localStorage.setItem(SESSION_KEY, JSON.stringify(student)); startPendingSync(); return { token, student: { id: `group-${student.groupNumber}-member-${student.memberNumber}`, name: student.name, groupNumber: `Group ${student.groupNumber}`, memberNumber: student.memberNumber } };
 }
 export async function teacherLogin(_username: string, password: string) {
   const result = await remoteReadWithRetry<{ token: string; session: Session }>({ action: "login", role: "teacher", passcode: password });
@@ -133,7 +142,7 @@ export async function teacherLogin(_username: string, password: string) {
 function normalize(raw: any): FieldworkSubmission { return { ...raw, studentId: raw.studentId || `group-${String(raw.groupNumber || "").replace(/\D/g, "")}`, data: raw.data || {}, groupNumber: raw.groupNumber || groupNumberFromSession() }; }
 function cache(records: FieldworkSubmission[]) { writeJson(SUBMISSIONS_KEY, records); }
 function clearLocalGroupData() { const group = groupNumberFromSession().replace(/\D/g, ""); const keys: string[] = []; for (let index = 0; index < localStorage.length; index += 1) { const key = localStorage.key(index); if (key && (key.startsWith(`fieldwork_group_${group}_`) || key.startsWith("fieldwork_zone_") || key === "fieldwork_completed" || key === SUBMISSIONS_KEY)) keys.push(key); } keys.forEach(key => localStorage.removeItem(key)); }
-export async function getMySubmissions() { const result = await remoteRead<{ submissions: any[] }>({ action: "group-data", ...authPayload() }); const submissions = (result.submissions || []).map(normalize).sort((a, b) => b.submittedAt.localeCompare(a.submittedAt)); if (!submissions.length) clearLocalGroupData(); cache(submissions); const latestByTask: Record<string, FieldworkSubmission> = {}; for (const item of submissions) latestByTask[`${item.zone}_${item.type}`] ??= item; return { submissions, latestByTask }; }
+export async function getMySubmissions() { await ensureStudentServerSession(); const result = await remoteRead<{ submissions: any[] }>({ action: "group-data", ...authPayload() }); const submissions = (result.submissions || []).map(normalize).sort((a, b) => b.submittedAt.localeCompare(a.submittedAt)); if (!submissions.length) clearLocalGroupData(); cache(submissions); const latestByTask: Record<string, FieldworkSubmission> = {}; for (const item of submissions) latestByTask[`${item.zone}_${item.type}`] ??= item; return { submissions, latestByTask }; }
 export function hydrateSubmissions(submissions: FieldworkSubmission[]) { const completed = JSON.parse(localStorage.getItem("fieldwork_completed") || "{}"); for (const submission of submissions) { const task = taskForApiType(submission.type); const payload = submission.data ?? {}; const formData = task === "building" ? payload.buildings : task === "environment" ? payload.scores : task === "social-cultural" ? payload.items : task === "economic" ? payload.prices : payload; const key = activeStorageKey(submission.zone, task); const serverTime = new Date(submission.submittedAt).getTime() || 0; if (formData !== undefined && readMetaUpdatedAt(key) <= serverTime) writeDraft(key, formData, serverTime); completed[`${submission.zone}_${task}`] = true; localStorage.setItem(`fieldwork_zone_${submission.zone}_${task}_submitted`, "true"); } localStorage.setItem("fieldwork_completed", JSON.stringify(completed)); window.dispatchEvent(new Event("fieldwork-submitted")); }
 export async function submitData(zone: ZoneId, type: string, data: unknown) {
   const apiType = apiTypeForTask(type); const s = session(); if (!s || s.role !== "student") throw new Error("登入已過期，請重新登入");
