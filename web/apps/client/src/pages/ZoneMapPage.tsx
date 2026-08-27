@@ -29,15 +29,6 @@ export default function ZoneMapPage(){
   }, []);
 
   return <Page>
-    {/* @section: manual-zone-selection */}
-    <section className="rounded-3xl bg-primary p-5 text-primary-foreground">
-      <p className="text-sm opacity-90">{t("currentZone")}</p>
-      <h1 className="text-3xl font-black">{t("chooseAnyZone")}</h1>
-      <p className="mt-3 inline-flex rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
-        {t("openZone")}
-      </p>
-    </section>
-
     {/* @section: collected-data-entry */}
     <Link to="/data" className="field-card mt-5 flex min-h-[64px] items-center justify-between border-primary bg-primary/5">
       <div><h2 className="text-lg font-black text-primary">{t("collectedData")}</h2><p className="mt-1 text-sm text-muted-foreground">{t("dataTableIntro")}</p></div><span className="ml-3 text-2xl text-primary">→</span>
@@ -50,7 +41,7 @@ export default function ZoneMapPage(){
         return <Link key={z.id} to={`/zone/${z.id}`} className="field-card border-primary transition hover:-translate-y-0.5 hover:shadow-lg">
           <div className="flex items-start justify-between gap-3">
             <h2 className="min-w-0 flex-1 text-xl font-bold leading-snug text-primary">{t(z.nameKey)}</h2>
-            <span className="inline-flex min-h-[44px] min-w-[64px] flex-shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-accent px-4 py-1 text-sm font-semibold">{zoneComplete?t("completed"):t("open")}</span>
+            <span className={`inline-flex min-h-[44px] min-w-[64px] flex-shrink-0 items-center justify-center whitespace-nowrap rounded-full px-4 py-1 text-sm font-semibold ${zoneComplete ? "bg-cyan-500 text-white" : "bg-accent"}`}>{zoneComplete?t("completed"):t("open")}</span>
           </div>
           <p className="mt-3 text-sm text-muted-foreground">{t("openZone")}</p>
         </Link>;
