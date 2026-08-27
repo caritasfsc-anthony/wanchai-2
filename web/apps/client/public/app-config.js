@@ -4,5 +4,5 @@
 // Example:
 //   googleSheetWebAppUrl: "https://script.google.com/macros/s/XXXXX/exec"
 window.__SKYBASE_APP_CONFIG__ = window.__SKYBASE_APP_CONFIG__ || {
-  googleSheetWebAppUrl: "https://script.google.com/macros/s/AKfycbwukmW1DGiX-7z4AnKvioO2oEEQulFlQBSRFpYjBDceyoChz3DSRjImjm-MB2P1_LI/exec"
+  googleSheetWebAppUrl: "https://script.google.com/macros/s/AKfycbxdp4QwZpxezM65i87FmvZO8JQSZ4zr5F_lBVNXOH-v5jnTSCUd36jMo5zF2Sgv0qM/exec"
 };
