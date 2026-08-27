@@ -50,6 +50,22 @@ async function remoteRead<T>(params: Record<string, string | number>) {
     script.onerror = () => finish(new Error("未能連接同步服務。")); script.src = url.toString(); document.head.appendChild(script);
   });
 }
+function canRetryLogin(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  return !message.includes("登入資料不正確") && !message.includes("只限教師使用");
+}
+async function remoteReadWithRetry<T>(params: Record<string, string | number>, retries = 2) {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try { return await remoteRead<T>(params); }
+    catch (error) {
+      lastError = error;
+      if (attempt === retries || !canRetryLogin(error)) throw error;
+      await wait(800 * (attempt + 1));
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("同步服務暫時沒有回應");
+}
 async function remoteWrite(payload: Record<string, unknown>) {
   // Apps Script does not expose CORS response headers.  A resolved no-cors request
   // only means the browser handed it off, so every write is confirmed by a later read.
@@ -104,11 +120,13 @@ function startPendingSync() {
 if (typeof window !== "undefined" && session()?.role === "student") startPendingSync();
 
 export async function studentLogin(groupNumber: number, memberNumber: number) {
-  const result = await remoteRead<{ token: string; session: Session }>({ action: "login", role: "student", groupNumber, memberNumber });
+  // Fieldwork Wi-Fi can briefly drop while a large class signs in. Retry transient
+  // JSONP/network errors, but never retry an invalid identity.
+  const result = await remoteReadWithRetry<{ token: string; session: Session }>({ action: "login", role: "student", groupNumber, memberNumber });
   setAuthToken(result.token); setRole("student"); localStorage.setItem(SESSION_KEY, JSON.stringify(result.session)); startPendingSync(); return { token: result.token, student: { id: `group-${result.session.groupNumber}-member-${result.session.memberNumber}`, name: result.session.name, groupNumber: `Group ${result.session.groupNumber}`, memberNumber: result.session.memberNumber } };
 }
 export async function teacherLogin(_username: string, password: string) {
-  const result = await remoteRead<{ token: string; session: Session }>({ action: "login", role: "teacher", passcode: password });
+  const result = await remoteReadWithRetry<{ token: string; session: Session }>({ action: "login", role: "teacher", passcode: password });
   setAuthToken(result.token); setRole("teacher"); localStorage.setItem(SESSION_KEY, JSON.stringify(result.session)); return { token: result.token, teacher: { username: result.session.name } };
 }
 
