@@ -1,25 +1,32 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Page } from "@/components/FieldworkShell";
 import { zones, type ZoneId } from "@/data/fieldwork";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { apiTypeForTask, getMySubmissions } from "@/lib/fieldworkApi";
 
 const taskKeys = ["building", "environment", "social-cultural", "economic", "shop-tally"];
 
-function isZoneComplete(zoneId: ZoneId): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    const completed = JSON.parse(localStorage.getItem("fieldwork_completed") || "{}");
-    return taskKeys.every((task) =>
-      Boolean(completed[`${zoneId}_${task}`]) ||
-      localStorage.getItem(`fieldwork_zone_${zoneId}_${task}_submitted`) === "true"
-    );
-  } catch {
-    return false;
-  }
-}
-
 export default function ZoneMapPage(){
   const {t}=useLanguage();
+  const [completedZones, setCompletedZones] = useState<Record<ZoneId, boolean>>({ A: false, B: false, C: false, D: false });
+  useEffect(() => {
+    let active = true;
+    const refresh = async () => {
+      try {
+        const { submissions } = await getMySubmissions();
+        const next = (Object.keys(zones) as ZoneId[]).reduce((state, zoneId) => {
+          state[zoneId] = taskKeys.every(task => submissions.some(item => item.zone === zoneId && item.type === apiTypeForTask(task)));
+          return state;
+        }, {} as Record<ZoneId, boolean>);
+        if (active) setCompletedZones(next);
+      } catch { if (active) setCompletedZones({ A: false, B: false, C: false, D: false }); }
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 15000);
+    window.addEventListener("fieldwork-submitted", refresh);
+    return () => { active = false; window.clearInterval(timer); window.removeEventListener("fieldwork-submitted", refresh); };
+  }, []);
 
   return <Page>
     {/* @section: manual-zone-selection */}
@@ -39,7 +46,7 @@ export default function ZoneMapPage(){
     {/* @section: accessible-zone-grid */}
     <div className="mt-5 grid gap-3 md:grid-cols-2">
       {Object.values(zones).map(z=>{
-        const zoneComplete=isZoneComplete(z.id);
+        const zoneComplete=completedZones[z.id];
         return <Link key={z.id} to={`/zone/${z.id}`} className="field-card border-primary transition hover:-translate-y-0.5 hover:shadow-lg">
           <div className="flex items-start justify-between gap-3">
             <h2 className="min-w-0 flex-1 text-xl font-bold leading-snug text-primary">{t(z.nameKey)}</h2>
