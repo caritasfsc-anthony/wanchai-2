@@ -1,5 +1,8 @@
 import { setAuthToken, clearAuthToken, getAuthToken } from "@/lib/auth";
 import { tasks, type ZoneId } from "@/data/fieldwork";
+import { initializeApp } from "firebase/app";
+import { getAuth, signInAnonymously } from "firebase/auth";
+import { collection, doc, getDocs, getFirestore, serverTimestamp, setDoc } from "firebase/firestore";
 
 export type Role = "student" | "teacher";
 export type FieldworkSubmission = { id: string; studentId: string; zone: ZoneId; type: string; data: Record<string, unknown>; submittedAt: string; studentName?: string; groupNumber?: string; memberNumber?: number };
@@ -13,6 +16,9 @@ const SESSION_KEY = "fieldwork_group_session";
 const PENDING_SUBMISSIONS_KEY = "fieldwork_pending_submissions";
 const GROUP_COUNT = 8;
 const MEMBER_COUNT = 5;
+const firebaseApp = initializeApp({ apiKey: "AIzaSyCUqBRUgwkioy50Ep8bWf-f7xN5iQ_pBow", authDomain: "wanchai-fieldwork-2.firebaseapp.com", projectId: "wanchai-fieldwork-2", storageBucket: "wanchai-fieldwork-2.firebasestorage.app", messagingSenderId: "139625672071", appId: "1:139625672071:web:cbd3ba6ea8ba61707eb722" });
+const firebaseAuth = getAuth(firebaseApp); const firestore = getFirestore(firebaseApp);
+async function ensureFirebaseAuth() { if (!firebaseAuth.currentUser) await signInAnonymously(firebaseAuth); }
 const STUDENT_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 type PendingSubmission = { id: string; groupNumber: number; zone: ZoneId; type: string; data: unknown; queuedAt: string; attempts: number };
 let pendingSyncTimer: number | undefined;
@@ -133,7 +139,7 @@ export async function studentLogin(groupNumber: number, memberNumber: number) {
   // slow school network cannot prevent students from starting their fieldwork.
   const student: Session = { role: "student", groupNumber, memberNumber, name: `成員${memberNumber}`, expiresAt: Date.now() + STUDENT_SESSION_TTL_MS };
   const token = `student-local-${groupNumber}-${memberNumber}-${Date.now()}`;
-  setAuthToken(token); setRole("student"); localStorage.setItem(SESSION_KEY, JSON.stringify(student)); startPendingSync(); return { token, student: { id: `group-${student.groupNumber}-member-${student.memberNumber}`, name: student.name, groupNumber: `Group ${student.groupNumber}`, memberNumber: student.memberNumber } };
+  setAuthToken(token); setRole("student"); localStorage.setItem(SESSION_KEY, JSON.stringify(student)); void ensureFirebaseAuth(); startPendingSync(); return { token, student: { id: `group-${student.groupNumber}-member-${student.memberNumber}`, name: student.name, groupNumber: `Group ${student.groupNumber}`, memberNumber: student.memberNumber } };
 }
 export async function teacherLogin(_username: string, password: string) {
   const result = await remoteReadWithRetry<{ token: string; session: Session }>({ action: "login", role: "teacher", passcode: password });
@@ -143,14 +149,13 @@ export async function teacherLogin(_username: string, password: string) {
 function normalize(raw: any): FieldworkSubmission { return { ...raw, studentId: raw.studentId || `group-${String(raw.groupNumber || "").replace(/\D/g, "")}`, data: raw.data || {}, groupNumber: raw.groupNumber || groupNumberFromSession() }; }
 function cache(records: FieldworkSubmission[]) { writeJson(SUBMISSIONS_KEY, records); }
 function clearLocalGroupData() { const group = groupNumberFromSession().replace(/\D/g, ""); const keys: string[] = []; for (let index = 0; index < localStorage.length; index += 1) { const key = localStorage.key(index); if (key && (key.startsWith(`fieldwork_group_${group}_`) || key.startsWith("fieldwork_zone_") || key === "fieldwork_completed" || key === SUBMISSIONS_KEY)) keys.push(key); } keys.forEach(key => localStorage.removeItem(key)); }
-export async function getMySubmissions() { await ensureStudentServerSession(); const result = await remoteRead<{ submissions: any[] }>({ action: "group-data", ...authPayload() }); const submissions = (result.submissions || []).map(normalize).sort((a, b) => b.submittedAt.localeCompare(a.submittedAt)); if (!submissions.length) clearLocalGroupData(); cache(submissions); const latestByTask: Record<string, FieldworkSubmission> = {}; for (const item of submissions) latestByTask[`${item.zone}_${item.type}`] ??= item; return { submissions, latestByTask }; }
+export async function getMySubmissions() { const s = session(); if (!s || s.role !== "student") throw new Error("登入已過期，請重新登入"); await ensureFirebaseAuth(); const result = await getDocs(collection(firestore, "wanchaiFieldwork", `group-${s.groupNumber}`, "submissions")); const submissions = result.docs.map(item => normalize({ id: item.id, ...item.data() })).sort((a, b) => b.submittedAt.localeCompare(a.submittedAt)); if (!submissions.length) clearLocalGroupData(); cache(submissions); const latestByTask: Record<string, FieldworkSubmission> = {}; for (const item of submissions) latestByTask[`${item.zone}_${item.type}`] ??= item; return { submissions, latestByTask }; }
 export function hydrateSubmissions(submissions: FieldworkSubmission[]) { const completed = JSON.parse(localStorage.getItem("fieldwork_completed") || "{}"); for (const submission of submissions) { const task = taskForApiType(submission.type); const payload = submission.data ?? {}; const formData = task === "building" ? payload.buildings : task === "environment" ? payload.scores : task === "social-cultural" ? payload.items : task === "economic" ? payload.prices : payload; const key = activeStorageKey(submission.zone, task); const serverTime = new Date(submission.submittedAt).getTime() || 0; if (formData !== undefined && readMetaUpdatedAt(key) <= serverTime) writeDraft(key, formData, serverTime); completed[`${submission.zone}_${task}`] = true; localStorage.setItem(`fieldwork_zone_${submission.zone}_${task}_submitted`, "true"); } localStorage.setItem("fieldwork_completed", JSON.stringify(completed)); window.dispatchEvent(new Event("fieldwork-submitted")); }
 export async function submitData(zone: ZoneId, type: string, data: unknown) {
   const apiType = apiTypeForTask(type); const s = session(); if (!s || s.role !== "student") throw new Error("登入已過期，請重新登入");
   const record: FieldworkSubmission = { id: `group-${s.groupNumber}-${zone}-${apiType}`, studentId: currentStudentId(), zone, type: apiType, data: (data ?? {}) as Record<string, unknown>, submittedAt: new Date().toISOString(), studentName: s.name, groupNumber: `Group ${s.groupNumber}`, memberNumber: s.memberNumber };
-  queueSubmission(zone, apiType, data);
-  const confirmed = await syncPendingSubmissions();
-  if (!confirmed) throw new Error("同步服務暫時沒有確認收到資料");
+  await ensureFirebaseAuth();
+  await setDoc(doc(firestore, "wanchaiFieldwork", `group-${s.groupNumber}`, "submissions", `${zone}-${apiType}`), { ...record, updatedAt: serverTimestamp() });
   const others = allSubmissions().filter(item => item.id !== record.id); cache([record, ...others]); return { submission: record };
 }
 
