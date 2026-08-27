@@ -1,0 +1,458 @@
+[
+  {
+    "name": "mobile student no-draft idle",
+    "url": "http://127.0.0.1:3100/zone/A/task/environment",
+    "title": "灣仔再生 / Reshaping Wan Chai Fieldwork App",
+    "consoleIssues": [
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      }
+    ],
+    "smallControls": [],
+    "screenshot": "qa-artifacts/visual-qa/mobile-student-no-draft-idle.png",
+    "idleSeen": true
+  },
+  {
+    "name": "mobile student autosave saving/saved",
+    "url": "http://127.0.0.1:3100/zone/A/task/environment",
+    "title": "灣仔再生 / Reshaping Wan Chai Fieldwork App",
+    "consoleIssues": [
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      }
+    ],
+    "smallControls": [],
+    "screenshot": "qa-artifacts/visual-qa/mobile-student-autosave-saved.png",
+    "interimScreenshot": "qa-artifacts/visual-qa/mobile-student-autosave-saving.png",
+    "savingSeen": true,
+    "savedSeen": true
+  },
+  {
+    "name": "mobile student restored draft",
+    "url": "http://127.0.0.1:3100/zone/A/task/environment",
+    "title": "灣仔再生 / Reshaping Wan Chai Fieldwork App",
+    "consoleIssues": [
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      }
+    ],
+    "smallControls": [],
+    "screenshot": "qa-artifacts/visual-qa/mobile-student-restored.png",
+    "restoredSeen": true
+  },
+  {
+    "name": "mobile student pending after server failure",
+    "url": "http://127.0.0.1:3100/zone/A/task/environment",
+    "title": "灣仔再生 / Reshaping Wan Chai Fieldwork App",
+    "consoleIssues": [
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      }
+    ],
+    "smallControls": [],
+    "screenshot": "qa-artifacts/visual-qa/mobile-student-pending-failure.png",
+    "pendingSeen": true
+  },
+  {
+    "name": "desktop student no-draft idle",
+    "url": "http://127.0.0.1:3100/zone/A/task/environment",
+    "title": "灣仔再生 / Reshaping Wan Chai Fieldwork App",
+    "consoleIssues": [
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      }
+    ],
+    "smallControls": [],
+    "screenshot": "qa-artifacts/visual-qa/desktop-student-no-draft-idle.png",
+    "idleSeen": true
+  },
+  {
+    "name": "desktop student autosave saving/saved",
+    "url": "http://127.0.0.1:3100/zone/A/task/environment",
+    "title": "灣仔再生 / Reshaping Wan Chai Fieldwork App",
+    "consoleIssues": [
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      }
+    ],
+    "smallControls": [],
+    "screenshot": "qa-artifacts/visual-qa/desktop-student-autosave-saved.png",
+    "interimScreenshot": "qa-artifacts/visual-qa/desktop-student-autosave-saving.png",
+    "savingSeen": true,
+    "savedSeen": true
+  },
+  {
+    "name": "desktop student restored draft",
+    "url": "http://127.0.0.1:3100/zone/A/task/environment",
+    "title": "灣仔再生 / Reshaping Wan Chai Fieldwork App",
+    "consoleIssues": [
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      }
+    ],
+    "smallControls": [],
+    "screenshot": "qa-artifacts/visual-qa/desktop-student-restored.png",
+    "restoredSeen": true
+  },
+  {
+    "name": "desktop student pending after server failure",
+    "url": "http://127.0.0.1:3100/zone/A/task/environment",
+    "title": "灣仔再生 / Reshaping Wan Chai Fieldwork App",
+    "consoleIssues": [
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      }
+    ],
+    "smallControls": [],
+    "screenshot": "qa-artifacts/visual-qa/desktop-student-pending-failure.png",
+    "pendingSeen": true
+  },
+  {
+    "name": "mobile teacher overview matrix",
+    "url": "http://127.0.0.1:3100/teacher",
+    "title": "灣仔再生 / Reshaping Wan Chai Fieldwork App",
+    "consoleIssues": [
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      }
+    ],
+    "smallControls": [],
+    "screenshot": "qa-artifacts/visual-qa/mobile-teacher-overview-matrix.png",
+    "legendSeen": false,
+    "matrixInfo": {
+      "zoneHeaders": [
+        "Zone A · 1–5",
+        "Zone B · 1–5",
+        "Zone C · 1–5",
+        "Zone D · 1–5"
+      ],
+      "numberedCells": [
+        "✓",
+        "✓",
+        "✓",
+        "✓",
+        "✓",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ]
+    }
+  },
+  {
+    "name": "mobile teacher data/history",
+    "url": "http://127.0.0.1:3100/teacher",
+    "title": "灣仔再生 / Reshaping Wan Chai Fieldwork App",
+    "consoleIssues": [
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      }
+    ],
+    "smallControls": [],
+    "screenshot": "qa-artifacts/visual-qa/mobile-teacher-revision-history.png",
+    "dataScreenshot": "qa-artifacts/visual-qa/mobile-teacher-data-filters.png",
+    "exportSeen": true,
+    "filterCounts": 4,
+    "historyInfo": {
+      "clientHeight": 263,
+      "scrollHeight": 263,
+      "canScroll": false,
+      "text": "空氣質素 PM2.5/1010/10噪音水平7/10高寬比4/10風流通潛力10/10綠化覆蓋水平7/10街道衛生情況0/10總分38/60平均6.3/10"
+    }
+  },
+  {
+    "name": "desktop teacher overview matrix",
+    "url": "http://127.0.0.1:3100/teacher",
+    "title": "灣仔再生 / Reshaping Wan Chai Fieldwork App",
+    "consoleIssues": [
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      }
+    ],
+    "smallControls": [],
+    "screenshot": "qa-artifacts/visual-qa/desktop-teacher-overview-matrix.png",
+    "legendSeen": false,
+    "matrixInfo": {
+      "zoneHeaders": [
+        "Zone A · 1–5",
+        "Zone B · 1–5",
+        "Zone C · 1–5",
+        "Zone D · 1–5"
+      ],
+      "numberedCells": [
+        "✓",
+        "✓",
+        "✓",
+        "✓",
+        "✓",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ]
+    }
+  },
+  {
+    "name": "desktop teacher data/history",
+    "url": "http://127.0.0.1:3100/teacher",
+    "title": "灣仔再生 / Reshaping Wan Chai Fieldwork App",
+    "consoleIssues": [
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition."
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+      }
+    ],
+    "smallControls": [],
+    "screenshot": "qa-artifacts/visual-qa/desktop-teacher-revision-history.png",
+    "dataScreenshot": "qa-artifacts/visual-qa/desktop-teacher-data-filters.png",
+    "exportSeen": true,
+    "filterCounts": 4,
+    "historyInfo": {
+      "clientHeight": 263,
+      "scrollHeight": 263,
+      "canScroll": false,
+      "text": "空氣質素 PM2.5/1010/10噪音水平7/10高寬比4/10風流通潛力10/10綠化覆蓋水平7/10街道衛生情況0/10總分38/60平均6.3/10"
+    }
+  }
+]

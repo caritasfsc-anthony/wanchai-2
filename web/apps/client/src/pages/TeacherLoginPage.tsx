@@ -1,0 +1,7 @@
+import { FormEvent, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { teacherLogin } from "@/lib/fieldworkApi";
+import { SchoolLogo } from "@/components/FieldworkShell";
+
+export default function TeacherLoginPage(){ const {t}=useLanguage(); const nav=useNavigate(); const [username,setUsername]=useState("teacher"); const [password,setPassword]=useState(""); const [error,setError]=useState(""); async function submit(e:FormEvent){e.preventDefault(); try{await teacherLogin(username,password); nav("/teacher");}catch{setError(t("required"));}} return <div className="app-shell grid min-h-screen place-items-center bg-cover bg-center bg-fixed p-4" style={{ backgroundImage: "linear-gradient(rgba(248,250,247,.34), rgba(248,250,247,.44)), url('images/zone-d-background_2.png')" }}><form onSubmit={submit} className="field-card w-full max-w-sm space-y-4"><div className="rounded-2xl bg-white/90 p-2 shadow-sm ring-1 ring-primary/10"><SchoolLogo className="max-h-11" /></div><h1 className="text-2xl font-black text-primary">{t("teacherLogin")}</h1><input className="field-input" aria-label={t("username")} value={username} onChange={e=>setUsername(e.target.value)} placeholder={t("username")} /><input className="field-input" type="password" aria-label={t("password")} value={password} onChange={e=>setPassword(e.target.value)} placeholder={t("password")} /><button className="primary-btn w-full">{t("login")}</button>{error && <p className="text-sm text-destructive">{error}</p>}</form></div> }
