@@ -49,8 +49,8 @@ async function remoteRead<T>(params: Record<string, string | number>) {
 async function remoteWrite(payload: Record<string, unknown>) { await fetch(endpoint(), { method: "POST", mode: "no-cors", cache: "no-store", keepalive: true, headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) }); }
 function authPayload() { const token = getAuthToken(); if (!token) throw new Error("登入已過期，請重新登入"); return { token }; }
 
-export async function studentLogin(groupNumber: number, memberNumber: number, passcode: string) {
-  const result = await remoteRead<{ token: string; session: Session }>({ action: "login", role: "student", groupNumber, memberNumber, passcode });
+export async function studentLogin(groupNumber: number, memberNumber: number) {
+  const result = await remoteRead<{ token: string; session: Session }>({ action: "login", role: "student", groupNumber, memberNumber });
   setAuthToken(result.token); setRole("student"); localStorage.setItem(SESSION_KEY, JSON.stringify(result.session)); return { token: result.token, student: { id: `group-${result.session.groupNumber}-member-${result.session.memberNumber}`, name: result.session.name, groupNumber: `Group ${result.session.groupNumber}`, memberNumber: result.session.memberNumber } };
 }
 export async function teacherLogin(_username: string, password: string) {

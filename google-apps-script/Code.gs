@@ -39,7 +39,7 @@ function ensureSheets_(ss) {
 }
 function login_(ss, payload) {
   const role = String(payload.role || "student"); const rows = ss.getSheetByName(ACCOUNT_SHEET).getDataRange().getValues();
-  const match = rows.slice(1).find(function(row) { return String(row[4]) === role && String(row[3]) === String(payload.passcode || "") && (role === "teacher" || (Number(row[0]) === Number(payload.groupNumber) && Number(row[1]) === Number(payload.memberNumber))); });
+  const match = rows.slice(1).find(function(row) { return String(row[4]) === role && (role === "student" ? (Number(row[0]) === Number(payload.groupNumber) && Number(row[1]) === Number(payload.memberNumber)) : String(row[3]) === String(payload.passcode || "")); });
   if (!match) throw new Error("登入資料不正確");
   const session = { role: role, groupNumber: Number(match[0]) || 0, memberNumber: Number(match[1]) || 0, name: String(match[2]), expiresAt: Date.now() + SESSION_TTL_MS }; const token = Utilities.getUuid();
   PropertiesService.getScriptProperties().setProperty("fieldwork-session-" + token, JSON.stringify(session)); return { token: token, session: session };
@@ -56,7 +56,13 @@ function saveGroupSubmission_(ss, session, payload) {
     if (rowNumber > 0) sheet.getRange(rowNumber + 1, 1, 1, row.length).setValues([row]); else sheet.appendRow(row); ss.getSheetByName(GROUP_HISTORY_SHEET).appendRow([Utilities.getUuid(), id, session.groupNumber, zone, type, dataJson, now, session.name, session.memberNumber]); return { submission: normalizeSubmission_(row) };
   } finally { lock.releaseLock(); }
 }
-function clearAll_(ss) { [GROUP_DATA_SHEET, GROUP_HISTORY_SHEET, FIELDWORK_RAW_SHEET].forEach(function(name) { const sheet = ss.getSheetByName(name); if (sheet && sheet.getLastRow() > 1) sheet.deleteRows(2, sheet.getLastRow() - 1); }); return { cleared: true }; }
+function clearAll_(ss) {
+  [GROUP_DATA_SHEET, GROUP_HISTORY_SHEET, FIELDWORK_RAW_SHEET].forEach(function(name) { const sheet = ss.getSheetByName(name); if (sheet && sheet.getLastRow() > 1) sheet.deleteRows(2, sheet.getLastRow() - 1); });
+  const building = ss.getSheetByName("Part 1 Building"); if (building) building.getRange("B6:I9").clearContent();
+  const sustainability = ss.getSheetByName("Part 2 Sustainability"); if (sustainability) sustainability.getRange("C6:J23").clearContent();
+  const shop = ss.getSheetByName("Part 2 Shop style"); if (shop) shop.getRange("C6:J33").clearContent();
+  return { cleared: true };
+}
 function exportToAnalysis_(ss) { const values = ss.getSheetByName(GROUP_DATA_SHEET).getDataRange().getValues().slice(1).map(normalizeSubmission_); values.forEach(function(item) { appendRawSubmission_(ss, item); writeToAnalysisSheets_(ss, item); }); return { count: values.length }; }
 function legacySubmit_(ss, submission) { if (!submission || !submission.id) throw new Error("Missing submission"); appendRawSubmission_(ss, submission); writeToAnalysisSheets_(ss, submission); return { id: submission.id }; }
 function appendRawSubmission_(ss, s) { const sh = ss.getSheetByName(FIELDWORK_RAW_SHEET) || ss.insertSheet(FIELDWORK_RAW_SHEET); if (sh.getLastRow() === 0) sh.appendRow(["id", "submittedAt", "studentId", "groupNumber", "studentName", "zone", "type", "dataJson"]); const ids = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues().flat() : []; if (ids.indexOf(s.id) === -1) sh.appendRow([s.id, s.submittedAt || "", s.studentId || s.id, s.groupNumber || "", s.studentName || "", s.zone || "", s.type || "", JSON.stringify(s.data || {})]); }
