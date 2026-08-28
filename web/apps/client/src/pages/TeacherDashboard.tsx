@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Page } from "@/components/FieldworkShell";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { clearAllFieldworkData, exportGroupDataToGoogleSheet, getGroups, getTeacherPhotos, getTeacherSubmissionHistory, getTeacherSubmissions, taskForApiType, type FieldworkPhoto, type FieldworkRevision } from "@/lib/fieldworkApi";
+import { clearAllFieldworkData, exportGroupDataToGoogleSheet, groupsFromSubmissions, getTeacherPhotos, getTeacherSubmissionHistory, getTeacherSubmissions, taskForApiType, type FieldworkPhoto, type FieldworkRevision } from "@/lib/fieldworkApi";
 import { tasks } from "@/data/fieldwork";
 import { submissionFields } from "@/lib/submissionDisplay";
 
@@ -27,7 +27,7 @@ export default function TeacherDashboard(){
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
-  async function loadDashboard(){ const [groupData, submissionData] = await Promise.all([getGroups(), getTeacherSubmissions()]); setGroups(groupData.groups); setSubs(submissionData.submissions); }
+  async function loadDashboard(){ const submissionData = await getTeacherSubmissions(); setGroups(groupsFromSubmissions(submissionData.submissions).groups); setSubs(submissionData.submissions); }
   async function refreshDashboard(){ setRefreshing(true); setError(""); try { await loadDashboard(); } catch (err) { setError(err instanceof Error ? err.message : t("noData")); } finally { setRefreshing(false); } }
   useEffect(()=>{ void refreshDashboard(); const timer=window.setInterval(()=>{ loadDashboard().catch(()=>{}); },15000); return()=>window.clearInterval(timer); },[]);
   useEffect(()=>{ if(activeTab==="photos" && !photosLoaded){ getTeacherPhotos().then(p=>{ setPhotos(p); setPhotosLoaded(true); }).catch(()=>{}); } },[activeTab, photosLoaded]);
@@ -64,7 +64,7 @@ export default function TeacherDashboard(){
   }
 
   async function exportToSheet(){ setActionBusy("export"); setError(""); try { const result = await exportGroupDataToGoogleSheet(); window.alert(lang === "zh" ? `已送出 ${result.count} 項組別資料到 Google Sheet。` : `Sent ${result.count} group records to Google Sheet.`); } catch (err) { setError(err instanceof Error ? err.message : t("noData")); } finally { setActionBusy(""); } }
-  async function clearAll(){ const prompt = lang === "zh" ? "此操作會清空 Google Sheet 內所有本次考察資料及分析結果，不能復原。\n確定要繼續嗎？" : "This permanently clears all fieldwork data and analysis results in Google Sheet. Continue?"; if (!window.confirm(prompt)) return; setActionBusy("clear"); setError(""); try { await clearAllFieldworkData(); await loadDashboard(); window.alert(lang === "zh" ? "已清空 Google Sheet 的本次考察資料。" : "Google Sheet fieldwork data has been cleared."); } catch (err) { setError(err instanceof Error ? err.message : t("noData")); } finally { setActionBusy(""); } }
+  async function clearAll(){ const prompt = lang === "zh" ? "此操作會清空 Firebase 及 Google Sheet 內所有本次考察資料，不能復原。\n確定要繼續嗎？" : "This permanently clears all fieldwork data in Firebase and Google Sheet. Continue?"; if (!window.confirm(prompt)) return; setActionBusy("clear"); setError(""); try { await clearAllFieldworkData(); await loadDashboard(); window.alert(lang === "zh" ? "已清空 Firebase 及 Google Sheet 的本次考察資料。" : "Firebase and Google Sheet fieldwork data have been cleared."); } catch (err) { setError(err instanceof Error ? err.message : t("noData")); } finally { setActionBusy(""); } }
 
   return <Page>
     {/* @section: teacher-dashboard-heading */}<div className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-3xl font-black text-primary">{t("dashboard")}</h1><div className="flex flex-wrap gap-2"><button type="button" disabled={refreshing || Boolean(actionBusy)} onClick={refreshDashboard} className="secondary-btn min-h-[44px]">{refreshing ? "…" : (lang === "zh" ? "更新資料" : "Refresh data")}</button><button type="button" disabled={Boolean(actionBusy)} onClick={exportToSheet} className="primary-btn min-h-[44px]">{actionBusy === "export" ? "…" : (lang === "zh" ? "送出到 Google Sheet" : "Send to Google Sheet")}</button><button type="button" disabled={Boolean(actionBusy)} onClick={clearAll} className="min-h-[44px] rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-60">{actionBusy === "clear" ? "…" : (lang === "zh" ? "清除已有學生資料" : "Clear existing student data")}</button></div></div>
