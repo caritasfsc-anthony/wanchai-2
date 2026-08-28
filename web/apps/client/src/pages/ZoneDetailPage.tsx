@@ -24,12 +24,13 @@ function LandmarkCard({ landmark }: { landmark: Landmark }) {
   const [active, setActive] = useState(0);
   const zh = lang === "zh";
   const label = (z: string, e: string) => zh ? z : e;
+  const images = landmark.images ?? [];
   return <article className="field-card overflow-hidden bg-white/95 p-0 shadow-lg backdrop-blur-sm">
     {/* @section: bilingual-landmark-gallery */}
-    <div className="bg-neutral-100 p-2">
-      <img src={landmark.images[active]} alt={`${landmark.titleZh} / ${landmark.titleEn}, ${active + 1}`} className="h-64 w-full rounded-xl object-contain md:h-80" />
-      <div className="mt-2 grid grid-cols-2 gap-2">{landmark.images.map((src, i) => <button type="button" key={src} onClick={() => setActive(i)} className={`min-h-[72px] overflow-hidden rounded-xl border-2 ${active === i ? "border-primary" : "border-transparent"}`} aria-label={`${label("查看相片", "View photo")} ${i + 1}`}><img src={src} alt="" className="h-20 w-full object-contain bg-white" /></button>)}</div>
-    </div>
+    {images.length > 0 ? <div className="bg-neutral-100 p-2">
+      <img src={images[active]} alt={`${landmark.titleZh} / ${landmark.titleEn}, ${active + 1}`} className="h-64 w-full rounded-xl object-contain md:h-80" />
+      <div className="mt-2 grid grid-cols-2 gap-2">{images.map((src, i) => <button type="button" key={src} onClick={() => setActive(i)} className={`min-h-[72px] overflow-hidden rounded-xl border-2 ${active === i ? "border-primary" : "border-transparent"}`} aria-label={`${label("查看相片", "View photo")} ${i + 1}`}><img src={src} alt="" className="h-20 w-full object-contain bg-white" /></button>)}</div>
+    </div> : <div className="grid h-40 place-items-center bg-neutral-100 p-4 text-center text-sm text-muted-foreground">{label("暫未提供參考相片，請參閱下方資料來源。", "Reference photo is not yet available. Please see the sources below.")}</div>}
     <div className="p-4">
       <div className="flex items-start justify-between gap-2"><h2 className="text-xl font-black text-primary">{label(landmark.titleZh, landmark.titleEn)}<span className="mt-1 block text-sm font-semibold text-muted-foreground">{label(landmark.titleEn, landmark.titleZh)}</span></h2>{landmark.built && <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{landmark.built}</span>}</div>
       <p className="mt-3 text-sm"><b>{label("地址", "Address")}:</b> {label(landmark.addressZh, landmark.addressEn)}</p>
