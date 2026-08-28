@@ -50,6 +50,19 @@ function readJson<T>(key: string, fallback: T): T { try { return JSON.parse(loca
 function writeJson(key: string, value: unknown) { localStorage.setItem(key, JSON.stringify(value)); }
 function allSubmissions() { return readJson<FieldworkSubmission[]>(SUBMISSIONS_KEY, []); }
 
+// Completion badges used to be stored with no group identifier.  They are now
+// rebuilt from Firebase whenever a student selects an identity, so one group's
+// old device state can never make another group look completed.
+function resetLocalCompletionState() {
+  localStorage.removeItem("fieldwork_completed");
+  const keys: string[] = [];
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+    if (key && key.startsWith("fieldwork_zone_") && key.endsWith("_submitted")) keys.push(key);
+  }
+  keys.forEach(key => localStorage.removeItem(key));
+}
+
 function endpoint() { const url = (window.__SKYBASE_APP_CONFIG__?.googleSheetWebAppUrl || window.__SKYBASE_APP_CONFIG__?.fieldworkSheetUrl || "").trim(); if (!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:\?.*)?$/.test(url)) throw new Error("Google Sheet endpoint is not configured. Please set googleSheetWebAppUrl in app-config.js."); return url; }
 function requestId() { return `fieldworkJsonp${Date.now()}${Math.random().toString(36).slice(2)}`; }
 async function remoteRead<T>(params: Record<string, string | number>) {
@@ -142,7 +155,7 @@ export async function studentLogin(groupNumber: number, memberNumber: number) {
   // slow school network cannot prevent students from starting their fieldwork.
   const student: Session = { role: "student", groupNumber, memberNumber, name: `成員${memberNumber}`, expiresAt: Date.now() + STUDENT_SESSION_TTL_MS };
   const token = `student-local-${groupNumber}-${memberNumber}-${Date.now()}`;
-  setAuthToken(token); setRole("student"); localStorage.setItem(SESSION_KEY, JSON.stringify(student)); void ensureFirebaseAuth(); return { token, student: { id: `group-${student.groupNumber}-member-${student.memberNumber}`, name: student.name, groupNumber: `Group ${student.groupNumber}`, memberNumber: student.memberNumber } };
+  setAuthToken(token); setRole("student"); localStorage.setItem(SESSION_KEY, JSON.stringify(student)); resetLocalCompletionState(); void ensureFirebaseAuth(); return { token, student: { id: `group-${student.groupNumber}-member-${student.memberNumber}`, name: student.name, groupNumber: `Group ${student.groupNumber}`, memberNumber: student.memberNumber } };
 }
 export async function teacherLogin(_username: string, password: string) {
   const result = await remoteReadWithRetry<{ token: string; session: Session }>({ action: "login", role: "teacher", passcode: password });
@@ -154,9 +167,9 @@ function normalize(raw: any): FieldworkSubmission {
   return { ...raw, submittedAt, studentId: raw.studentId || `group-${String(raw.groupNumber || "").replace(/\D/g, "")}`, data: raw.data || {}, groupNumber: raw.groupNumber || groupNumberFromSession() };
 }
 function cache(records: FieldworkSubmission[]) { writeJson(SUBMISSIONS_KEY, records); }
-function clearLocalGroupData() { const group = groupNumberFromSession().replace(/\D/g, ""); const keys: string[] = []; for (let index = 0; index < localStorage.length; index += 1) { const key = localStorage.key(index); if (key && (key.startsWith(`fieldwork_group_${group}_`) || key.startsWith("fieldwork_zone_") || key === "fieldwork_completed" || key === SUBMISSIONS_KEY)) keys.push(key); } keys.forEach(key => localStorage.removeItem(key)); }
+function clearLocalGroupData() { const group = groupNumberFromSession().replace(/\D/g, ""); const keys: string[] = []; for (let index = 0; index < localStorage.length; index += 1) { const key = localStorage.key(index); if (key && (key.startsWith(`fieldwork_group_${group}_`) || key.startsWith("fieldwork_zone_") || key === SUBMISSIONS_KEY)) keys.push(key); } keys.forEach(key => localStorage.removeItem(key)); resetLocalCompletionState(); }
 export async function getMySubmissions() { const s = session(); if (!s || s.role !== "student") throw new Error("登入已過期，請重新登入"); await ensureFirebaseAuth(); const result = await getDocs(collection(firestore, "wanchaiFieldwork", `group-${s.groupNumber}`, "submissions")); const submissions = result.docs.map(item => normalize({ id: item.id, ...item.data() })).sort((a, b) => b.submittedAt.localeCompare(a.submittedAt)); if (!submissions.length) clearLocalGroupData(); cache(submissions); const latestByTask: Record<string, FieldworkSubmission> = {}; for (const item of submissions) latestByTask[`${item.zone}_${item.type}`] ??= item; return { submissions, latestByTask }; }
-export function hydrateSubmissions(submissions: FieldworkSubmission[]) { const completed = JSON.parse(localStorage.getItem("fieldwork_completed") || "{}"); for (const submission of submissions) { const task = taskForApiType(submission.type); const payload = submission.data ?? {}; const formData = task === "building" ? payload.buildings : task === "environment" ? payload.scores : task === "social-cultural" ? payload.items : task === "economic" ? payload.prices : payload; const key = activeStorageKey(submission.zone, task); const serverTime = new Date(submission.submittedAt).getTime() || 0; if (formData !== undefined && readMetaUpdatedAt(key) <= serverTime) writeDraft(key, formData, serverTime); completed[`${submission.zone}_${task}`] = true; localStorage.setItem(`fieldwork_zone_${submission.zone}_${task}_submitted`, "true"); } localStorage.setItem("fieldwork_completed", JSON.stringify(completed)); window.dispatchEvent(new Event("fieldwork-submitted")); }
+export function hydrateSubmissions(submissions: FieldworkSubmission[]) { resetLocalCompletionState(); const completed: Record<string, boolean> = {}; for (const submission of submissions) { const task = taskForApiType(submission.type); const payload = submission.data ?? {}; const formData = task === "building" ? payload.buildings : task === "environment" ? payload.scores : task === "social-cultural" ? payload.items : task === "economic" ? payload.prices : payload; const key = activeStorageKey(submission.zone, task); const serverTime = new Date(submission.submittedAt).getTime() || 0; if (formData !== undefined && readMetaUpdatedAt(key) <= serverTime) writeDraft(key, formData, serverTime); completed[`${submission.zone}_${task}`] = true; localStorage.setItem(`fieldwork_zone_${submission.zone}_${task}_submitted`, "true"); } localStorage.setItem("fieldwork_completed", JSON.stringify(completed)); window.dispatchEvent(new Event("fieldwork-submitted")); }
 export async function submitData(zone: ZoneId, type: string, data: unknown) {
   const apiType = apiTypeForTask(type); const s = session(); if (!s || s.role !== "student") throw new Error("登入已過期，請重新登入");
   const record: FieldworkSubmission = { id: `group-${s.groupNumber}-${zone}-${apiType}`, studentId: currentStudentId(), zone, type: apiType, data: (data ?? {}) as Record<string, unknown>, submittedAt: new Date().toISOString(), studentName: s.name, groupNumber: `Group ${s.groupNumber}`, memberNumber: s.memberNumber };
