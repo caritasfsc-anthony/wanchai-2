@@ -1,9 +1,9 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Page } from "@/components/FieldworkShell";
-import { landmarks, photoPrompts, tasks, zones, type Landmark, type ZoneId } from "@/data/fieldwork";
+import { landmarks, tasks, zones, type Landmark, type ZoneId } from "@/data/fieldwork";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { getMyPhotos, getMySubmissions, hydrateSubmissions, uploadPhoto, type FieldworkPhoto } from "@/lib/fieldworkApi";
+import { getMySubmissions, hydrateSubmissions } from "@/lib/fieldworkApi";
 import { zoneBackgroundStyle } from "@/lib/submissionDisplay";
 
 const ZoneLeafletMap = lazy(() => import("@/components/ZoneLeafletMap"));
@@ -49,8 +49,6 @@ export default function ZoneDetailPage() {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const [tab, setTab] = useState("map");
-  const [photos, setPhotos] = useState<FieldworkPhoto[]>([]);
-  const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>({});
   const refreshCompletedTasks = useCallback(() => setCompletedTasks(readTaskCompletion(zone.id)), [zone.id]);
 
@@ -61,14 +59,6 @@ export default function ZoneDetailPage() {
     window.addEventListener("fieldwork-submitted", refreshCompletedTasks); window.addEventListener("storage", refreshCompletedTasks);
     return () => { window.clearInterval(timer); window.removeEventListener("fieldwork-submitted", refreshCompletedTasks); window.removeEventListener("storage", refreshCompletedTasks); };
   }, [refreshCompletedTasks]);
-  useEffect(() => { if (tab === "photos") getMyPhotos(zone.id).then(setPhotos).catch(() => {}); }, [tab, zone.id]);
-
-  async function handlePhotoCapture(promptKey: string, file: File) {
-    setUploading(u => ({ ...u, [promptKey]: true }));
-    try { const uploaded = await uploadPhoto(zone.id, promptKey, file); setPhotos(prev => [...prev.filter(p => p.promptKey !== promptKey), uploaded]); }
-    finally { setUploading(u => ({ ...u, [promptKey]: false })); }
-  }
-  const zonePhotosMap = photos.reduce<Record<string, FieldworkPhoto>>((acc, p) => { acc[p.promptKey] = p; return acc; }, {});
 
   return <Page className="bg-cover bg-fixed bg-center" style={zoneBackgroundStyle(zone.id)}>
     {/* @section: zone-context-background */}
@@ -80,9 +70,8 @@ export default function ZoneDetailPage() {
     {tab === "map" && <div className="mt-4"><div className="field-card overflow-hidden bg-white/95 shadow-lg backdrop-blur-sm"><Suspense fallback={<div className="grid h-[360px] place-items-center text-muted-foreground">{t("loadingData")}</div>}><ZoneLeafletMap zoneId={zone.id} /></Suspense></div></div>}
     {tab === "tasks" && <div className="mt-4 grid gap-3">{tasks.map(task => { const done = Boolean(completedTasks[task.path]); return <Link className={`field-card flex min-h-[64px] items-center justify-between bg-white/95 shadow-lg backdrop-blur-sm ${done ? "border-green-200 bg-green-50" : ""}`} key={task.id} to={done ? `/zone/${zone.id}/task/${task.path}?review=true` : `/zone/${zone.id}/task/${task.path}`}><b>{t(task.key)}{done && <span className="ml-2 rounded-full bg-green-500 px-2 py-0.5 text-xs text-white">✓</span>}</b><span className={done ? "text-green-700" : "text-primary"}>{done ? t("completed") : "→"}</span></Link>; })}</div>}
     {tab === "info" && <div className="mt-4 grid gap-4">{landmarks[zone.id].map(l => <LandmarkCard landmark={l} key={l.titleEn} />)}</div>}
-    {tab === "photos" && <div className="mt-4 grid gap-3">{photoPrompts.map(k => { const uploaded = zonePhotosMap[k]; const isUp = uploading[k]; return <div className="field-card bg-white/95 shadow-lg backdrop-blur-sm" key={k}><b>{t(k)}</b><p className="mt-1 text-xs text-muted-foreground">{t("cameraHint")}</p>{uploaded ? <div className="mt-3"><img src={uploaded.downloadUrl} alt={t(k)} className="max-h-64 w-full rounded-xl object-contain" /><p className="mt-1 text-xs font-semibold text-green-600">✓ {t("photoUploaded")}</p></div> : <label className="mt-3 flex min-h-[44px] cursor-pointer items-center"><input type="file" accept="image/*" capture="environment" className="hidden" disabled={isUp} onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoCapture(k, f); }} /><span className={`primary-btn w-full text-center ${isUp ? "opacity-60" : ""}`}>{isUp ? t("photoUploading") : t("takePhoto")}</span></label>}</div>; })}</div>}
 
     {/* @section: zone-bottom-navigation */}
-    <nav className="bottom-tabs">{[["map", "map"], ["tasks", "tasks"], ["info", "info"], ["photos", "photos"]].map(([id, key]) => <button key={id} onClick={() => setTab(id)} className={`tab-btn min-h-[44px] ${tab === id ? "tab-btn-active" : ""}`}>{t(key as any)}</button>)}</nav>
+    <nav className="bottom-tabs">{[["map", "map"], ["tasks", "tasks"], ["info", "info"]].map(([id, key]) => <button key={id} onClick={() => setTab(id)} className={`tab-btn min-h-[44px] ${tab === id ? "tab-btn-active" : ""}`}>{t(key as any)}</button>)}</nav>
   </Page>;
 }

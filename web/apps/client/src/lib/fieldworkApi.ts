@@ -11,7 +11,6 @@ type Session = { role: Role; groupNumber: number; memberNumber: number; name: st
 declare global { interface Window { __SKYBASE_APP_CONFIG__?: RuntimeConfig; } }
 
 const SUBMISSIONS_KEY = "fieldwork_static_submissions";
-const PHOTOS_KEY = "fieldwork_static_photos";
 const SESSION_KEY = "fieldwork_group_session";
 const PENDING_SUBMISSIONS_KEY = "fieldwork_pending_submissions";
 const GROUP_COUNT = 8;
@@ -198,10 +197,3 @@ export async function deleteTeacherSubmission() { throw new Error("2.0 不提供
 export function saveLocal(zone: ZoneId, task: string, data: unknown) { writeDraft(activeStorageKey(zone, task), data); return true; }
 export function loadLocal<T>(zone: ZoneId, task: string, fallback: T): T { return readJson(activeStorageKey(zone, task), fallback); }
 export function hasLocalDraft(zone: ZoneId, task: string) { return localStorage.getItem(activeStorageKey(zone, task)) !== null; }
-
-export type FieldworkPhoto = { id: string; zone: string; promptKey: string; downloadUrl: string; groupNumber: string; studentName: string; uploadedAt: string };
-function allPhotos() { return readJson<FieldworkPhoto[]>(PHOTOS_KEY, []); }
-function fileToDataUrl(file: File) { return new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(reader.error); reader.readAsDataURL(file); }); }
-export async function uploadPhoto(zone: ZoneId, promptKey: string, file: File): Promise<FieldworkPhoto> { const item: FieldworkPhoto = { id: `${currentStudentId()}-${zone}-${promptKey}-${Date.now()}`, zone, promptKey, downloadUrl: await fileToDataUrl(file), groupNumber: groupNumberFromSession(), studentName: studentNameFromSession(), uploadedAt: new Date().toISOString() }; writeJson(PHOTOS_KEY, [item, ...allPhotos().filter(p => !(p.zone === zone && p.promptKey === promptKey && p.groupNumber === item.groupNumber))]); return item; }
-export async function getMyPhotos(zone: ZoneId) { return allPhotos().filter(p => p.zone === zone && p.groupNumber === groupNumberFromSession()); }
-export async function getTeacherPhotos(zone?: string, group?: string) { return allPhotos().filter(p => (!zone || p.zone === zone) && (!group || p.groupNumber === group)); }

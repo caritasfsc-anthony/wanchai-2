@@ -21,7 +21,6 @@ export const environmentItems = ["air", "noise", "hw", "wind", "green", "cleanli
 export const socialItems = ["education", "medical", "arts", "publicSpace", "historic"] as TranslationKey[];
 export const goods = ["bread", "lunch", "haircut"] as TranslationKey[];
 export const shopTypes = ["fashionable", "chain", "traditional", "vacant"] as TranslationKey[];
-export const photoPrompts = ["photo1", "photo2", "photo3", "photo4", "photo5"] as TranslationKey[];
 
 export const scoreHints: Partial<Record<TranslationKey, { range: string; zh: string; en: string }[]>> = {
   design: [{ range: "0–1", zh: "唐樓式", en: "Tong-lau style" }, { range: "2–3", zh: "樸實", en: "Plain / simple" }, { range: "4–5", zh: "現代／新穎", en: "Modern / innovative" }],

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Page } from "@/components/FieldworkShell";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { clearAllFieldworkData, exportGroupDataToGoogleSheet, groupsFromSubmissions, getTeacherPhotos, getTeacherSubmissionHistory, getTeacherSubmissions, taskForApiType, type FieldworkPhoto, type FieldworkRevision } from "@/lib/fieldworkApi";
+import { clearAllFieldworkData, exportGroupDataToGoogleSheet, groupsFromSubmissions, getTeacherSubmissionHistory, getTeacherSubmissions, taskForApiType, type FieldworkRevision } from "@/lib/fieldworkApi";
 import { tasks } from "@/data/fieldwork";
 import { submissionFields } from "@/lib/submissionDisplay";
 
@@ -15,14 +15,12 @@ export default function TeacherDashboard(){
   const [groups,setGroups]=useState<any[]>([]);
   const [subs,setSubs]=useState<any[]>([]);
   const [selected,setSelected]=useState<string|null>(null);
-  const [activeTab, setActiveTab] = useState<"overview"|"data"|"photos">("overview");
-  const [photos, setPhotos] = useState<FieldworkPhoto[]>([]);
+  const [activeTab, setActiveTab] = useState<"overview"|"data">("overview");
   const [filterZone, setFilterZone] = useState("");
   const [filterGroup, setFilterGroup] = useState("");
   const [filterTask, setFilterTask] = useState("");
   const [history, setHistory] = useState<Record<string, FieldworkRevision[]>>({});
   const [historyOpen, setHistoryOpen] = useState("");
-  const [photosLoaded, setPhotosLoaded] = useState(false);
   const [actionBusy, setActionBusy] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -30,7 +28,6 @@ export default function TeacherDashboard(){
   async function loadDashboard(){ const submissionData = await getTeacherSubmissions(); setGroups(groupsFromSubmissions(submissionData.submissions).groups); setSubs(submissionData.submissions); }
   async function refreshDashboard(){ setRefreshing(true); setError(""); try { await loadDashboard(); } catch (err) { setError(err instanceof Error ? err.message : t("noData")); } finally { setRefreshing(false); } }
   useEffect(()=>{ void refreshDashboard(); const timer=window.setInterval(()=>{ loadDashboard().catch(()=>{}); },15000); return()=>window.clearInterval(timer); },[]);
-  useEffect(()=>{ if(activeTab==="photos" && !photosLoaded){ getTeacherPhotos().then(p=>{ setPhotos(p); setPhotosLoaded(true); }).catch(()=>{}); } },[activeTab, photosLoaded]);
 
   const activeGroups = useMemo(()=>groups.filter(g=>zones.some(zone=>apiTaskTypes.some(type=>Boolean(g.matrix?.[zone]?.[type])))).length,[groups]);
   const completed=useMemo(()=>groups.reduce((total,g)=>total+zones.filter(zone=>apiTaskTypes.every(type=>Boolean(g.matrix?.[zone]?.[type]))).length,0),[groups]);
@@ -45,7 +42,6 @@ export default function TeacherDashboard(){
     .filter(s=>!filterGroup||s.groupNumber===filterGroup)
     .filter(s=>!filterTask||s.type===filterTask),[subs,selected,filterZone,filterGroup,filterTask]);
 
-  const filteredPhotos = useMemo(()=>photos.filter(p=>!filterZone || p.zone===filterZone).filter(p=>!filterGroup || p.groupNumber===filterGroup),[photos, filterZone, filterGroup]);
 
   function exportCsv(){
     const header = [t("studentName"), t("groupNumber"), t("filterZone"), t("filterTask"), t("submittedAt"), t("dataDetails")];
@@ -69,7 +65,7 @@ export default function TeacherDashboard(){
   return <Page>
     {/* @section: teacher-dashboard-heading */}<div className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-3xl font-black text-primary">{t("dashboard")}</h1><div className="flex flex-wrap gap-2"><button type="button" disabled={refreshing || Boolean(actionBusy)} onClick={refreshDashboard} className="secondary-btn min-h-[44px]">{refreshing ? "…" : (lang === "zh" ? "更新資料" : "Refresh data")}</button><button type="button" disabled={Boolean(actionBusy)} onClick={exportToSheet} className="primary-btn min-h-[44px]">{actionBusy === "export" ? "…" : (lang === "zh" ? "送出到 Google Sheet" : "Send to Google Sheet")}</button><button type="button" disabled={Boolean(actionBusy)} onClick={clearAll} className="min-h-[44px] rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-60">{actionBusy === "clear" ? "…" : (lang === "zh" ? "清除已有學生資料" : "Clear existing student data")}</button></div></div>
     <div className="mt-4 grid grid-cols-3 gap-2">{([[(lang === "zh" ? "已有資料小組" : "Groups with data"),activeGroups],[t("zonesCompleted"),completed],[t("submissionsToday"),subs.filter(s=>String(s.submittedAt).startsWith(today)).length]] as [string,number][]).map(([k,v])=><div className="field-card text-center" key={k}><p className="text-xs text-muted-foreground">{k}</p><b className="text-2xl text-primary">{v}</b></div>)}</div>
-    <div className="mt-4 grid grid-cols-3 gap-1 rounded-2xl bg-muted p-1">{([["overview",t("completionMatrix")],["data",t("submissions")],["photos",t("photoGallery")]] as [string,string][]).map(([id,label])=><button key={id} onClick={()=>setActiveTab(id as any)} className={`min-h-[44px] rounded-xl py-2 text-sm font-semibold transition ${activeTab===id?"bg-white text-primary shadow-sm":"text-muted-foreground hover:text-foreground"}`}>{label}</button>)}</div>
+    <div className="mt-4 grid grid-cols-2 gap-1 rounded-2xl bg-muted p-1">{([["overview",t("completionMatrix")],["data",t("submissions")]] as [string,string][]).map(([id,label])=><button key={id} onClick={()=>setActiveTab(id as any)} className={`min-h-[44px] rounded-xl py-2 text-sm font-semibold transition ${activeTab===id?"bg-white text-primary shadow-sm":"text-muted-foreground hover:text-foreground"}`}>{label}</button>)}</div>
 
     {activeTab==="overview" && <section className="mt-4 space-y-3">
       <div className="field-card bg-white/90"><p className="text-sm font-bold text-primary">{t("taskLegend")}</p><div className="mt-2 grid gap-1 text-xs sm:grid-cols-5">{apiTaskTypes.map((type,index)=><span key={type} className="rounded-lg bg-muted px-2 py-1"><b>{index+1}</b> · {taskLabel(type)}</span>)}</div></div>
@@ -95,6 +91,5 @@ export default function TeacherDashboard(){
       {!filteredSubmissions.length&&<p className="text-muted-foreground">{t("noFilteredData")}</p>}
     </section>}
 
-    {activeTab==="photos" && <section className="mt-4"><div className="flex gap-2 flex-wrap mb-4"><select className="field-input max-w-[140px] min-h-[44px]" value={filterZone} onChange={e=>setFilterZone(e.target.value)}><option value="">{t("allZones")}</option>{zones.map(z=><option key={z} value={z}>Zone {z}</option>)}</select><select className="field-input max-w-[160px] min-h-[44px]" value={filterGroup} onChange={e=>setFilterGroup(e.target.value)}><option value="">{t("allGroups")}</option>{allGroupNumbers.map(g=><option key={g} value={g}>{g}</option>)}</select></div>{filteredPhotos.length===0 && <p className="text-muted-foreground">{t("noData")}</p>}<div className="grid grid-cols-2 gap-3 md:grid-cols-3">{filteredPhotos.map(p=><div key={p.id} className="field-card overflow-hidden p-0"><img src={p.downloadUrl} alt={p.promptKey} className="h-40 w-full object-cover" /><div className="p-2"><p className="text-xs font-semibold text-primary">Zone {p.zone} · {p.promptKey}</p><p className="text-xs text-muted-foreground">{p.groupNumber} · {p.studentName}</p><p className="text-xs text-muted-foreground">{p.uploadedAt?.slice(0,16)}</p></div></div>)}</div></section>}
   </Page>;
 }
