@@ -158,8 +158,10 @@ export async function studentLogin(groupNumber: number, memberNumber: number) {
 }
 const TEACHER_LOGIN_EMAIL = "anthonykwok@caritasfsc.edu.hk";
 export async function teacherLogin(username: string, password: string) {
-  const input = username.trim();
-  const account = input.toLowerCase() === "teacher" ? TEACHER_LOGIN_EMAIL : input;
+  const input = username.trim().toLowerCase();
+  const isSchoolEmail = input.endsWith("@caritasfsc.edu.hk");
+  if (input !== "teacher" && !isSchoolEmail) throw new Error("teacher-account-not-allowed");
+  const account = TEACHER_LOGIN_EMAIL;
   const credential = await signInWithEmailAndPassword(firebaseAuth, account, password);
   const token = await credential.user.getIdToken();
   const teacher: Session = { role: "teacher", groupNumber: 0, memberNumber: 0, name: username.trim() || "teacher", expiresAt: Date.now() + STUDENT_SESSION_TTL_MS };
