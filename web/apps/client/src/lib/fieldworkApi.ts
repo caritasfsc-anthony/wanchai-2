@@ -156,8 +156,10 @@ export async function studentLogin(groupNumber: number, memberNumber: number) {
   const token = `student-local-${groupNumber}-${memberNumber}-${Date.now()}`;
   setAuthToken(token); setRole("student"); localStorage.setItem(SESSION_KEY, JSON.stringify(student)); resetLocalCompletionState(); void ensureFirebaseAuth(); return { token, student: { id: `group-${student.groupNumber}-member-${student.memberNumber}`, name: student.name, groupNumber: `Group ${student.groupNumber}`, memberNumber: student.memberNumber } };
 }
+const TEACHER_LOGIN_EMAIL = "anthonykwok@caritasfsc.edu.hk";
 export async function teacherLogin(username: string, password: string) {
-  const account = username.trim().includes("@") ? username.trim() : `${username.trim()}@wanchai-fieldwork.hk`;
+  const input = username.trim();
+  const account = input.toLowerCase() === "teacher" ? TEACHER_LOGIN_EMAIL : input;
   const credential = await signInWithEmailAndPassword(firebaseAuth, account, password);
   const token = await credential.user.getIdToken();
   const teacher: Session = { role: "teacher", groupNumber: 0, memberNumber: 0, name: username.trim() || "teacher", expiresAt: Date.now() + STUDENT_SESSION_TTL_MS };
