@@ -61,7 +61,7 @@ export default function TeacherDashboard(){
   }
 
   async function exportToSheet(){ setActionBusy("export"); setError(""); try { const result = await exportGroupDataToGoogleSheet(); window.alert(lang === "zh" ? `已送出 ${result.count} 項組別資料到 Google Sheet。` : `Sent ${result.count} group records to Google Sheet.`); } catch (err) { setError(err instanceof Error ? err.message : t("noData")); } finally { setActionBusy(""); } }
-  async function clearAll(){ setConfirmClear(false); setActionBusy("clear"); setError(""); try { await clearAllFieldworkData(); await loadDashboard(); window.alert(lang === "zh" ? "已清空 Firebase 及 Google Sheet 的本次考察資料。" : "Firebase and Google Sheet fieldwork data have been cleared."); } catch (err) { setError(err instanceof Error ? err.message : t("noData")); } finally { setActionBusy(""); } }
+  async function clearAll(){ setConfirmClear(false); setActionBusy("clear"); setError(""); try { await clearAllFieldworkData(); await loadDashboard(); window.alert(lang === "zh" ? "已清空 Firebase 的本次考察資料。" : "Firebase fieldwork data have been cleared."); } catch (err) { setError(err instanceof Error ? err.message : t("noData")); } finally { setActionBusy(""); } }
 
   return <Page>
     {/* @section: teacher-dashboard-heading */}<div className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-3xl font-black text-primary">{t("dashboard")}</h1><div className="flex flex-wrap gap-2"><button type="button" disabled={refreshing || Boolean(actionBusy)} onClick={refreshDashboard} className="secondary-btn min-h-[44px]">{refreshing ? "…" : (lang === "zh" ? "更新資料" : "Refresh data")}</button><button type="button" disabled={Boolean(actionBusy)} onClick={exportToSheet} className="primary-btn min-h-[44px]">{actionBusy === "export" ? "…" : (lang === "zh" ? "送出到 Google Sheet" : "Send to Google Sheet")}</button><button type="button" disabled={Boolean(actionBusy)} onClick={()=>setConfirmClear(true)} className="min-h-[44px] rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-60">{actionBusy === "clear" ? "…" : (lang === "zh" ? "清除已有學生資料" : "Clear existing student data")}</button></div></div>
@@ -95,7 +95,7 @@ export default function TeacherDashboard(){
     {confirmClear && <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="clear-data-title">
       <section className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
         <h2 id="clear-data-title" className="text-xl font-black text-primary">{lang === "zh" ? "確定清除所有學生資料？" : "Clear all student data?"}</h2>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">{lang === "zh" ? "此操作會永久清空 Firebase 及 Google Sheet 內所有本次考察資料，不能復原。" : "This permanently clears all fieldwork data in Firebase and Google Sheet and cannot be undone."}</p>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">{lang === "zh" ? "此操作會永久清空 Firebase 內所有本次考察資料，不能復原。" : "This permanently clears all fieldwork data in Firebase and cannot be undone."}</p>
         <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={()=>setConfirmClear(false)} className="secondary-btn min-h-[44px]">{lang === "zh" ? "否" : "No"}</button><button type="button" onClick={clearAll} className="min-h-[44px] rounded-xl bg-red-700 px-5 py-2 font-bold text-white hover:bg-red-800">{lang === "zh" ? "是" : "Yes"}</button></div>
       </section>
     </div>}

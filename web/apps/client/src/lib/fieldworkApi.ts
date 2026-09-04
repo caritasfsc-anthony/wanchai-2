@@ -1,7 +1,7 @@
 import { setAuthToken, clearAuthToken, getAuthToken } from "@/lib/auth";
 import { tasks, type ZoneId } from "@/data/fieldwork";
 import { initializeApp } from "firebase/app";
-import { getAuth, signInAnonymously } from "firebase/auth";
+import { getAuth, signInAnonymously, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { collection, deleteDoc, doc, getDocs, getFirestore, serverTimestamp, setDoc } from "firebase/firestore";
 
 export type Role = "student" | "teacher";
@@ -30,7 +30,7 @@ let pendingSyncRunning = false;
 
 export function setRole(role: Role) { localStorage.setItem("fieldwork_role", role); }
 export function getRole(): Role | null { return localStorage.getItem("fieldwork_role") as Role | null; }
-export function logout() { clearAuthToken(); localStorage.removeItem("fieldwork_role"); localStorage.removeItem(SESSION_KEY); }
+export function logout() { void signOut(firebaseAuth).catch(() => undefined); clearAuthToken(); localStorage.removeItem("fieldwork_role"); localStorage.removeItem(SESSION_KEY); }
 export function hasToken() { return Boolean(getAuthToken()); }
 function session(): Session | null { try { return JSON.parse(localStorage.getItem(SESSION_KEY) || "") as Session; } catch { return null; } }
 function currentStudentId() { const value = session(); return value?.role === "student" ? `group-${value.groupNumber}-member-${value.memberNumber}` : ""; }
@@ -156,9 +156,12 @@ export async function studentLogin(groupNumber: number, memberNumber: number) {
   const token = `student-local-${groupNumber}-${memberNumber}-${Date.now()}`;
   setAuthToken(token); setRole("student"); localStorage.setItem(SESSION_KEY, JSON.stringify(student)); resetLocalCompletionState(); void ensureFirebaseAuth(); return { token, student: { id: `group-${student.groupNumber}-member-${student.memberNumber}`, name: student.name, groupNumber: `Group ${student.groupNumber}`, memberNumber: student.memberNumber } };
 }
-export async function teacherLogin(_username: string, password: string) {
-  const result = await remoteReadWithRetry<{ token: string; session: Session }>({ action: "login", role: "teacher", passcode: password });
-  setAuthToken(result.token); setRole("teacher"); localStorage.setItem(SESSION_KEY, JSON.stringify(result.session)); return { token: result.token, teacher: { username: result.session.name } };
+export async function teacherLogin(username: string, password: string) {
+  const account = username.trim().includes("@") ? username.trim() : `${username.trim()}@wanchai-fieldwork.hk`;
+  const credential = await signInWithEmailAndPassword(firebaseAuth, account, password);
+  const token = await credential.user.getIdToken();
+  const teacher: Session = { role: "teacher", groupNumber: 0, memberNumber: 0, name: username.trim() || "teacher", expiresAt: Date.now() + STUDENT_SESSION_TTL_MS };
+  setAuthToken(token); setRole("teacher"); localStorage.setItem(SESSION_KEY, JSON.stringify(teacher)); return { token, teacher: { username: teacher.name } };
 }
 
 function normalize(raw: any): FieldworkSubmission {
@@ -187,7 +190,7 @@ async function getAllFirebaseSubmissionDocs() {
   ));
   return results.flatMap(result => result.docs);
 }
-export async function clearAllFieldworkData() { const records = await getAllFirebaseSubmissionDocs(); await Promise.all(records.map(item => deleteDoc(item.ref))); return remoteRead<{ cleared: boolean }>({ action: "clear-all", ...authPayload() }); }
+export async function clearAllFieldworkData() { const records = await getAllFirebaseSubmissionDocs(); await Promise.all(records.map(item => deleteDoc(item.ref))); return { cleared: true }; }
 export type FieldworkRevision = FieldworkSubmission & { submissionId: string; revisedAt: string };
 export function groupsFromSubmissions(submissions: FieldworkSubmission[]) { const groups = Array.from({ length: GROUP_COUNT }, (_, index) => { const groupNumber = `Group ${index + 1}`; const groupSubs = submissions.filter(s => s.groupNumber === groupNumber); const matrix: Record<string, Record<string, boolean>> = {}; for (const zone of ["A", "B", "C", "D"]) { matrix[zone] = {}; for (const task of tasks) matrix[zone][apiTypeForTask(task.path)] = groupSubs.some(s => s.zone === zone && s.type === apiTypeForTask(task.path)); } return { studentId: `group-${index + 1}`, groupNumber, name: "共用資料", matrix, zones: matrix, lastActive: groupSubs[0]?.submittedAt ?? "" }; }); return { groups }; }
 export async function getGroups() { const { submissions } = await getTeacherSubmissions(); return groupsFromSubmissions(submissions); }
