@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Page } from "@/components/FieldworkShell";
 import { landmarks, tasks, zones, type Landmark, type ZoneId } from "@/data/fieldwork";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -48,7 +48,8 @@ export default function ZoneDetailPage() {
   const zone = zones[zoneId as ZoneId] ?? zones.A;
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
-  const [tab, setTab] = useState("map");
+  const [searchParams] = useSearchParams();
+  const [tab, setTab] = useState(() => searchParams.get("tab") === "tasks" ? "tasks" : "map");
   const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>({});
   const refreshCompletedTasks = useCallback(() => setCompletedTasks(readTaskCompletion(zone.id)), [zone.id]);
 
