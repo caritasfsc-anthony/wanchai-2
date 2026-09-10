@@ -64,10 +64,10 @@ function resetLocalCompletionState() {
 
 function endpoint() { const url = (window.__SKYBASE_APP_CONFIG__?.googleSheetWebAppUrl || window.__SKYBASE_APP_CONFIG__?.fieldworkSheetUrl || "").trim(); if (!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:\?.*)?$/.test(url)) throw new Error("Google Sheet endpoint is not configured. Please set googleSheetWebAppUrl in app-config.js."); return url; }
 function requestId() { return `fieldworkJsonp${Date.now()}${Math.random().toString(36).slice(2)}`; }
-async function remoteRead<T>(params: Record<string, string | number>) {
+async function remoteRead<T>(params: Record<string, string | number>, timeoutMs = 12000) {
   const callback = requestId(); const url = new URL(endpoint()); Object.entries({ ...params, callback }).forEach(([key, value]) => url.searchParams.set(key, String(value)));
   return new Promise<T>((resolve, reject) => {
-    const timeout = window.setTimeout(() => finish(new Error("同步服務暫時沒有回應。")), 12000);
+    const timeout = window.setTimeout(() => finish(new Error("同步服務暫時沒有回應。")), timeoutMs);
     const script = document.createElement("script");
     const finish = (error?: Error, result?: T) => { window.clearTimeout(timeout); script.remove(); delete (window as any)[callback]; error ? reject(error) : resolve(result as T); };
     (window as any)[callback] = (result: any) => { if (result?.ok === false) finish(new Error(result.error || "同步失敗")); else finish(undefined, result?.result ?? result); };
@@ -184,7 +184,36 @@ export async function submitData(zone: ZoneId, type: string, data: unknown) {
   const others = allSubmissions().filter(item => item.id !== record.id); cache([record, ...others]); return { submission: record };
 }
 
-export async function exportGroupDataToGoogleSheet() { const { submissions } = await getTeacherSubmissions(); for (const submission of submissions) await remoteWrite({ action: "legacy-submit", submission }); return { count: submissions.length }; }
+export type GoogleSheetExportProgress = { total: number; completed: number; sent: number; skipped: number; percentage: number };
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (value && typeof value === "object") return `{${Object.keys(value as Record<string, unknown>).sort().map(key => `${JSON.stringify(key)}:${stableJson((value as Record<string, unknown>)[key])}`).join(",")}}`;
+  return JSON.stringify(value) ?? "null";
+}
+async function submissionFingerprint(submission: FieldworkSubmission) {
+  const source = stableJson({ id: submission.id, submittedAt: submission.submittedAt, studentId: submission.studentId, groupNumber: submission.groupNumber, studentName: submission.studentName, memberNumber: submission.memberNumber, zone: submission.zone, type: submission.type, data: submission.data });
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(source));
+  return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, "0")).join("");
+}
+export async function exportGroupDataToGoogleSheet(onProgress?: (progress: GoogleSheetExportProgress) => void) {
+  const { submissions } = await getTeacherSubmissions();
+  const status = await remoteRead<{ fingerprints?: Record<string, string> }>({ action: "export-status" });
+  const records = await Promise.all(submissions.map(async submission => ({ submission, fingerprint: await submissionFingerprint(submission) })));
+  const changed = records.filter(record => status.fingerprints?.[record.submission.id] !== record.fingerprint);
+  const total = records.length; const skipped = total - changed.length; let sent = 0;
+  const report = () => onProgress?.({ total, completed: skipped + sent, sent, skipped, percentage: total ? Math.floor(((skipped + sent) / total) * 100) : 100 });
+  report();
+  for (const record of changed) {
+    try {
+      const receipt = await remoteRead<{ id: string }>({ action: "legacy-submit", submission: JSON.stringify(record.submission), fingerprint: record.fingerprint }, 60000);
+      if (receipt?.id !== record.submission.id) throw new Error("未收到此項資料的寫入確認");
+      sent += 1; report();
+    } catch (error) {
+      throw new Error(`Google Sheet 匯出中斷：已完成 ${skipped + sent} / ${total} 項。請稍後再次送出，系統只會補回未完成或已修改的資料。${error instanceof Error ? ` (${error.message})` : ""}`);
+    }
+  }
+  return { count: sent, total, skipped };
+}
 async function getAllFirebaseSubmissionDocs() {
   await ensureFirebaseAuth();
   // Read the known groups directly.  This works reliably with the published
