@@ -1,4 +1,5 @@
 import { setAuthToken, clearAuthToken, getAuthToken } from "@/lib/auth";
+import { withExportRetry, checkExportStopped, type ExportRetryOptions } from "./exportRetry";
 import { tasks, type ZoneId } from "@/data/fieldwork";
 import { initializeApp } from "firebase/app";
 import { getAuth, signInAnonymously, signInWithEmailAndPassword, signOut } from "firebase/auth";
@@ -215,10 +216,11 @@ async function submissionFingerprint(submission: FieldworkSubmission) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(source));
   return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, "0")).join("");
 }
-export async function exportGroupDataToGoogleSheet(onProgress?: (progress: GoogleSheetExportProgress) => void) {
-  await currentActivity();
-  const { submissions } = await getTeacherSubmissions();
-  const status = await remoteRead<{ fingerprints?: Record<string, string>; generation?: string }>({ action: "export-status" });
+export async function exportGroupDataToGoogleSheet(onProgress?: (progress: GoogleSheetExportProgress) => void, retry: ExportRetryOptions = {}) {
+  const generation = await withExportRetry(() => currentActivity(), retry);
+  const { submissions } = await withExportRetry(() => getTeacherSubmissions(), retry);
+  const status = await withExportRetry(() => remoteRead<{ fingerprints?: Record<string, string>; generation?: string }>({ action: "export-status" }), retry);
+  if ((status.generation || "initial") !== generation) throw new Error("Firebase 與 Google Sheet 考察批次不同，請先完成重設。");
   const records = await Promise.all(submissions.map(async submission => ({ submission, fingerprint: await submissionFingerprint(submission) })));
   const changed = records.filter(record => status.fingerprints?.[record.submission.id] !== record.fingerprint);
   const total = records.length; const skipped = total - changed.length; let sent = 0;
@@ -226,9 +228,13 @@ export async function exportGroupDataToGoogleSheet(onProgress?: (progress: Googl
   report();
   for (const record of changed) {
     try {
-      await currentActivity();
-      const receipt = await remoteRead<{ id: string }>({ action: "legacy-submit", submission: JSON.stringify(record.submission), fingerprint: record.fingerprint, generation: status.generation || "initial" }, 60000);
-      if (receipt?.id !== record.submission.id) throw new Error("未收到此項資料的寫入確認");
+      await withExportRetry(async () => {
+        checkExportStopped(retry.signal);
+        if (await currentActivity() !== generation) throw new Error("考察已重設，匯出已停止。請重新整理教師頁。");
+        checkExportStopped(retry.signal);
+        const receipt = await remoteRead<{ id: string }>({ action: "legacy-submit", submission: JSON.stringify(record.submission), fingerprint: record.fingerprint, generation }, 60000);
+        if (receipt?.id !== record.submission.id) throw new Error("未收到此項資料的寫入確認");
+      }, retry);
       sent += 1; report();
     } catch (error) {
       throw new Error(`Google Sheet 匯出中斷：已完成 ${skipped + sent} / ${total} 項。請稍後再次送出，系統只會補回未完成或已修改的資料。${error instanceof Error ? ` (${error.message})` : ""}`);

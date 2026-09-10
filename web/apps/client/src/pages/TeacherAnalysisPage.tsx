@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Page } from "@/components/FieldworkShell";
+import AnalysisCharts, { analysisTabs } from "@/components/AnalysisCharts";
 import { getTeacherSubmissions, type FieldworkSubmission } from "@/lib/fieldworkApi";
 
 export const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1bQ9ZaepwZOcjbuY9Kv5ANebK66S2x1L2beDL_PzPMjs/edit";
@@ -25,6 +26,7 @@ export default function TeacherAnalysisPage() {
   const [busy, setBusy] = useState(true);
   const [updated, setUpdated] = useState("");
   const [reload, setReload] = useState(0);
+  const [tab, setTab] = useState("building");
   useEffect(() => {
     let active = true, running = false;
     async function refresh() {
@@ -56,7 +58,12 @@ export default function TeacherAnalysisPage() {
     {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-red-700">{error} 以下如有資料，為上次成功讀取的版本。</p>}
     {!busy && !records.length && !error && <p className="field-card">目前沒有學生資料。</p>}
     <p className="mb-4 text-sm text-muted-foreground">「—」代表未填寫，0 為已填寫零值。平均只計算已填組別，不把未填當作零；此平均欄為網頁摘要。</p>
+    <div role="tablist" aria-label="分析主題" className="mb-5 flex flex-wrap gap-2">{analysisTabs.map(([id,label]) => <button key={id} role="tab" id={`tab-${id}`} aria-selected={tab===id} aria-controls="analysis-panel" onClick={() => setTab(id)} className={tab===id ? "primary-btn" : "secondary-btn"}>{label}</button>)}</div>
+    <div role="tabpanel" id="analysis-panel" aria-labelledby={`tab-${tab}`}>
+    {tab !== "tables" ? <AnalysisCharts records={records} tab={tab}/> : <>
     {metrics.map(([label, type, field]) => <section key={type} className="field-card mb-5"><h2 className="text-xl font-bold text-primary">{label}</h2>{table(zones.map(zone => ({ label: `街區 ${zone}`, values: groups.map(g => value(g, zone, type, field)) })))}</section>)}
     <section className="field-card"><h2 className="text-xl font-bold text-primary">地舖格調統計</h2>{zones.map(zone => <div key={zone} className="mt-5"><h3 className="font-bold">街區 {zone}</h3>{table(shops.map(([key, label]) => ({ label, values: groups.map(g => value(g, zone, "shop-tally", key, true)) })))}</div>)}</section>
+    </>}
+    </div>
   </Page>;
 }

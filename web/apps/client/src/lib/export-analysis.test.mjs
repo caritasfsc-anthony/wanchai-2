@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import { withExportRetry } from './exportRetry.ts';
+import { buildAnalysis } from './analysisSummary.ts';
+let calls=0; const delays=[];
+assert.equal(await withExportRetry(async()=>{ if(++calls<4) throw Error('未能連接同步服務。'); return 7; },{enabled:()=>true},async ms=>{delays.push(ms)}),7);
+assert.deepEqual(delays,[3000,6000,12000]);
+calls=0;
+await assert.rejects(withExportRetry(async()=>{calls++;throw Error('Teacher authentication required')},{enabled:()=>true}), /authentication/);
+assert.equal(calls,1);
+await assert.rejects(withExportRetry(async()=>{throw Error('未能連接同步服務。')},{enabled:()=>false}), /連接/);
+const controller=new AbortController();
+await assert.rejects(withExportRetry(async()=>{throw Error('network')},{enabled:()=>true,signal:controller.signal},async()=>controller.abort()), /停止/);
+let enabled=true;
+await assert.rejects(withExportRetry(async()=>{throw Error('network')},{enabled:()=>enabled},async()=>{enabled=false}), /network/);
+const row=(groupNumber,type,data,submittedAt='2026-09-10')=>({groupNumber,zone:'A',type,data,submittedAt});
+const result=buildAnalysis([row('Group 1','building-scores',{average:0}),row('Group 2','building-scores',{average:10}),row('Group 2','building-scores',{average:99},'2026-01-01'),row('Group 1','environment',{average:2}),row('Group 1','social-cultural',{score:4}),row('Group 1','socioeconomic',{index:6}),row('Group 1','shop-tally',{counts:{chain:3,traditional:0}}),row('Group 2','shop-tally',{counts:{chain:5}})]);
+assert.equal(result[0].building,5);assert.equal(result[0].total,12);assert.equal(result[0].shops[1].value,8);assert.equal(result[0].shops[2].value,0);assert.equal(result[0].shops[0].value,null);assert.equal(result[1].building,null);assert.equal(result[1].total,null);
+console.log('PASS retry recovery/backoff, permanent errors, switch off, cancellation, averages, deduplication, sums, missing versus zero');

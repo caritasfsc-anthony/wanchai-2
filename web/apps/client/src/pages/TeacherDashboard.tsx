@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { GOOGLE_SHEET_URL } from "./TeacherAnalysisPage";
 import { Page } from "@/components/FieldworkShell";
@@ -24,6 +24,12 @@ export default function TeacherDashboard(){
   const [history, setHistory] = useState<Record<string, FieldworkRevision[]>>({});
   const [historyOpen, setHistoryOpen] = useState("");
   const [actionBusy, setActionBusy] = useState("");
+  const [autoRetry, setAutoRetry] = useState(false);
+  const retryEnabled = useRef(false);
+  const exportController = useRef<AbortController | null>(null);
+  const [retryMessage, setRetryMessage] = useState("");
+  const [stopping, setStopping] = useState(false);
+  useEffect(() => () => exportController.current?.abort(), []);
   const [confirmClear, setConfirmClear] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -63,10 +69,11 @@ export default function TeacherDashboard(){
     if(!history[submission.id]){ try{ const data=await getTeacherSubmissionHistory(submission.id); setHistory(prev=>({...prev,[submission.id]:data.revisions})); } catch(err){ setError(err instanceof Error ? err.message : t("noData")); } }
   }
 
-  async function exportToSheet(){ setActionBusy("export"); setError(""); setExportProgress(null); try { const result = await exportGroupDataToGoogleSheet(setExportProgress); window.alert(lang === "zh" ? `已更新 ${result.count} 項資料到 Google Sheet；${result.skipped} 項資料無需重複傳送。` : `Updated ${result.count} records; ${result.skipped} records were already up to date.`); } catch (err) { setError(err instanceof Error ? err.message : t("noData")); } finally { setActionBusy(""); } }
+  async function exportToSheet(){ if (exportController.current) return; const controller = new AbortController(); exportController.current = controller; setStopping(false); setRetryMessage(""); setActionBusy("export"); setError(""); setExportProgress(null); try { const result = await exportGroupDataToGoogleSheet(setExportProgress, { enabled: () => retryEnabled.current, signal: controller.signal, onRetry: setRetryMessage }); window.alert(`已更新 ${result.count} 項資料到 Google Sheet；${result.skipped} 項無需重複傳送。`); } catch (err) { setError(err instanceof Error ? err.message : t("noData")); } finally { exportController.current = null; setActionBusy(""); setRetryMessage(""); setStopping(false); } }
   async function clearAll(){ setConfirmClear(false); setActionBusy("clear"); setError(""); setExportProgress(null); try { await clearAllFieldworkData(); setHistory({}); setHistoryOpen(""); await loadDashboard(); window.alert(lang === "zh" ? "Firebase 及 Google Sheet 考察資料已清空，可以開始下一次考察。" : "Firebase and Google Sheet fieldwork data cleared. Ready for the next activity."); } catch (err) { setError(err instanceof Error ? err.message : t("noData")); } finally { setActionBusy(""); } }
 
   return <Page>
+    <section className="field-card mb-4"><label className="flex items-center gap-3 font-bold"><input type="checkbox" role="switch" checked={autoRetry} onChange={e => { retryEnabled.current = e.target.checked; setAutoRetry(e.target.checked); }} className="h-5 w-5" />斷線自動重試，直至本次匯出完成</label><p className="mt-2 text-sm text-muted-foreground">保持頁面開啟；鎖屏或關閉頁面可能暫停。只重試未確認項目，本次開始後新增的資料請再送出一次。</p>{retryMessage && <p role="status" className="mt-2 text-amber-800">{retryMessage}</p>}{actionBusy === "export" && <button className="secondary-btn mt-3" disabled={stopping} onClick={() => { exportController.current?.abort(); setStopping(true); setRetryMessage("正在停止，已送出的請求可能仍在處理；不會再傳送下一項。"); }}>{stopping ? "正在停止…" : "停止匯出"}</button>}</section>
     <div className="mb-4 flex flex-wrap gap-2"><a href={GOOGLE_SHEET_URL} target="_blank" rel="noopener noreferrer" className="secondary-btn">查看 Google Sheet</a><Link to="/teacher/analysis" className="secondary-btn">查看分析網頁</Link></div>
     {actionBusy === "clear" && <p role="status" className="mb-4 rounded-xl bg-amber-50 p-3">{lang === "zh" ? "正在清除兩邊考察資料，請保持此頁開啟，完成前暫停學生登入。" : "Resetting both stores. Keep this page open until complete."}</p>}
     {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p>}
