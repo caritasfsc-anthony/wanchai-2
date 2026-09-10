@@ -66,7 +66,7 @@ function saveGroupSubmission_(ss, session, payload) {
   } finally { lock.releaseLock(); }
 }
 function clearAll_(ss) {
-  [GROUP_DATA_SHEET, GROUP_HISTORY_SHEET, FIELDWORK_RAW_SHEET, EXPORT_STATUS_SHEET].forEach(function(name) { const sheet = ss.getSheetByName(name); if (sheet && sheet.getLastRow() > 1) sheet.deleteRows(2, sheet.getLastRow() - 1); });
+  [GROUP_DATA_SHEET, GROUP_HISTORY_SHEET, FIELDWORK_RAW_SHEET, EXPORT_STATUS_SHEET].forEach(function(name) { const sheet = ss.getSheetByName(name); if (sheet && sheet.getLastRow() > 1) sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent(); });
   const building = ss.getSheetByName("Part 1 Building"); if (building) building.getRange("B6:I9").clearContent();
   const sustainability = ss.getSheetByName("Part 2 Sustainability"); if (sustainability) sustainability.getRangeList(["C6:J9", "C13:J16", "C20:J23"]).clearContent();
   const shop = ss.getSheetByName("Part 2 Shop style"); if (shop) shop.getRangeList(["C6:J9", "C14:J17", "C22:J25", "C30:J33"]).clearContent();
@@ -75,20 +75,27 @@ function clearAll_(ss) {
 function resetFieldwork_(payload) {
   const requestId = String(payload.requestId || "");
   if (!/^[a-f0-9-]{36}$/.test(requestId)) throw new Error("Invalid reset request");
+  const properties = PropertiesService.getScriptProperties(); const key = "reset-" + requestId;
+  let lock = null;
+  try {
   const response = UrlFetchApp.fetch("https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=AIzaSyCUqBRUgwkioy50Ep8bWf-f7xN5iQ_pBow", { method: "post", contentType: "application/json", payload: JSON.stringify({ idToken: String(payload.idToken || "") }), muteHttpExceptions: true });
   const user = JSON.parse(response.getContentText()).users;
   if (response.getResponseCode() !== 200 || !user || user.length !== 1 || user[0].email !== "anthonykwok@caritasfsc.edu.hk") throw new Error("Teacher authentication required");
-  const properties = PropertiesService.getScriptProperties(); const key = "reset-" + requestId;
-  const lock = LockService.getScriptLock(); lock.waitLock(10000);
-  try {
+    const pendingLock = LockService.getScriptLock(); pendingLock.waitLock(10000); lock = pendingLock;
     const previous = properties.getProperty(key); if (previous && JSON.parse(previous).complete) return JSON.parse(previous);
     const ss = SpreadsheetApp.openById(FIELDWORK_SPREADSHEET_ID);
     properties.setProperty("fieldwork-export-generation", requestId);
     clearAll_(ss); SpreadsheetApp.flush();
     const receipt = { complete: true, requestId: requestId };
     properties.setProperty(key, JSON.stringify(receipt)); return receipt;
-  } catch (error) { properties.setProperty(key, JSON.stringify({ complete: false, error: String(error) })); throw error; }
-  finally { lock.releaseLock(); }
+  } catch (error) {
+    // POST responses are opaque to the website. Record even authentication and
+    // lock failures so the result poll reports the real error immediately.
+    const previous = properties.getProperty(key);
+    if (!previous || !JSON.parse(previous).complete) properties.setProperty(key, JSON.stringify({ complete: false, requestId: requestId, error: String(error) }));
+    throw error;
+  }
+  finally { if (lock) lock.releaseLock(); }
 }
 function exportToAnalysis_(ss) { const values = ss.getSheetByName(GROUP_DATA_SHEET).getDataRange().getValues().slice(1).map(normalizeSubmission_); values.forEach(function(item) { appendRawSubmission_(ss, item); writeToAnalysisSheets_(ss, item); }); return { count: values.length }; }
 function parseSubmission_(value) { return typeof value === "string" ? JSON.parse(value) : value; }

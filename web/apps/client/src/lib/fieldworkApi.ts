@@ -103,7 +103,10 @@ async function remoteReadWithRetry<T>(params: Record<string, string | number>, r
 async function remoteWrite(payload: Record<string, unknown>) {
   // Apps Script does not expose CORS response headers.  A resolved no-cors request
   // only means the browser handed it off, so every write is confirmed by a later read.
-  await fetch(endpoint(), { method: "POST", mode: "no-cors", cache: "no-store", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 45000);
+  try { await fetch(endpoint(), { method: "POST", mode: "no-cors", cache: "no-store", signal: controller.signal, headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) }); }
+  finally { window.clearTimeout(timer); }
 }
 function authPayload() { const token = getAuthToken(); if (!token) throw new Error("登入已過期，請重新登入"); return { token }; }
 function isLocalStudentToken(token = getAuthToken()) { return token.startsWith("student-local-"); }

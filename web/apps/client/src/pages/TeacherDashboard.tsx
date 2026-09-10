@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { GOOGLE_SHEET_URL } from "./TeacherAnalysisPage";
 import { Page } from "@/components/FieldworkShell";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { clearAllFieldworkData, exportGroupDataToGoogleSheet, groupsFromSubmissions, getTeacherSubmissionHistory, getTeacherSubmissions, taskForApiType, type FieldworkRevision } from "@/lib/fieldworkApi";
@@ -65,6 +67,7 @@ export default function TeacherDashboard(){
   async function clearAll(){ setConfirmClear(false); setActionBusy("clear"); setError(""); setExportProgress(null); try { await clearAllFieldworkData(); setHistory({}); setHistoryOpen(""); await loadDashboard(); window.alert(lang === "zh" ? "Firebase 及 Google Sheet 考察資料已清空，可以開始下一次考察。" : "Firebase and Google Sheet fieldwork data cleared. Ready for the next activity."); } catch (err) { setError(err instanceof Error ? err.message : t("noData")); } finally { setActionBusy(""); } }
 
   return <Page>
+    <div className="mb-4 flex flex-wrap gap-2"><a href={GOOGLE_SHEET_URL} target="_blank" rel="noopener noreferrer" className="secondary-btn">查看 Google Sheet</a><Link to="/teacher/analysis" className="secondary-btn">查看分析網頁</Link></div>
     {actionBusy === "clear" && <p role="status" className="mb-4 rounded-xl bg-amber-50 p-3">{lang === "zh" ? "正在清除兩邊考察資料，請保持此頁開啟，完成前暫停學生登入。" : "Resetting both stores. Keep this page open until complete."}</p>}
     {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p>}
     {actionBusy === "export" && !exportProgress && <p role="status">{lang === "zh" ? "正在核對待匯出資料…" : "Checking records to export…"}</p>}

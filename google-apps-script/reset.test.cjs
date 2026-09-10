@@ -18,6 +18,12 @@ const request = {requestId:'12345678-1234-1234-1234-123456789012',idToken:'mock'
 email = 'student@example.com';
 assert.throws(() => context.resetFieldwork_(request));
 assert.equal(clears,0);
+assert.match(JSON.parse(properties.get('reset-' + request.requestId)).error, /authentication/);
+const savedFetch = context.UrlFetchApp.fetch;
+context.UrlFetchApp.fetch = () => { throw Error('UrlFetch permission missing'); };
+assert.throws(() => context.resetFieldwork_(request), /permission/);
+assert.match(JSON.parse(properties.get('reset-' + request.requestId)).error, /permission/);
+context.UrlFetchApp.fetch = savedFetch;
 email = 'anthonykwok@caritasfsc.edu.hk';
 assert.equal(context.resetFieldwork_(request).complete,true);
 context.resetFieldwork_(request);
