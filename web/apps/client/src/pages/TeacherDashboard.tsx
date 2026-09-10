@@ -62,9 +62,10 @@ export default function TeacherDashboard(){
   }
 
   async function exportToSheet(){ setActionBusy("export"); setError(""); setExportProgress(null); try { const result = await exportGroupDataToGoogleSheet(setExportProgress); window.alert(lang === "zh" ? `已更新 ${result.count} 項資料到 Google Sheet；${result.skipped} 項資料無需重複傳送。` : `Updated ${result.count} records; ${result.skipped} records were already up to date.`); } catch (err) { setError(err instanceof Error ? err.message : t("noData")); } finally { setActionBusy(""); } }
-  async function clearAll(){ setConfirmClear(false); setActionBusy("clear"); setError(""); try { await clearAllFieldworkData(); await loadDashboard(); window.alert(lang === "zh" ? "已清空 Firebase 的本次考察資料。" : "Firebase fieldwork data have been cleared."); } catch (err) { setError(err instanceof Error ? err.message : t("noData")); } finally { setActionBusy(""); } }
+  async function clearAll(){ setConfirmClear(false); setActionBusy("clear"); setError(""); setExportProgress(null); try { await clearAllFieldworkData(); setHistory({}); setHistoryOpen(""); await loadDashboard(); window.alert(lang === "zh" ? "Firebase 及 Google Sheet 考察資料已清空，可以開始下一次考察。" : "Firebase and Google Sheet fieldwork data cleared. Ready for the next activity."); } catch (err) { setError(err instanceof Error ? err.message : t("noData")); } finally { setActionBusy(""); } }
 
   return <Page>
+    {actionBusy === "clear" && <p role="status" className="mb-4 rounded-xl bg-amber-50 p-3">{lang === "zh" ? "正在清除兩邊考察資料，請保持此頁開啟，完成前暫停學生登入。" : "Resetting both stores. Keep this page open until complete."}</p>}
     {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p>}
     {actionBusy === "export" && !exportProgress && <p role="status">{lang === "zh" ? "正在核對待匯出資料…" : "Checking records to export…"}</p>}
     {/* @section: teacher-dashboard-heading */}<div className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-3xl font-black text-primary">{t("dashboard")}</h1><div className="flex flex-wrap gap-2"><button type="button" disabled={refreshing || Boolean(actionBusy)} onClick={refreshDashboard} className="secondary-btn min-h-[44px]">{refreshing ? "…" : (lang === "zh" ? "更新資料" : "Refresh data")}</button><button type="button" disabled={Boolean(actionBusy)} onClick={exportToSheet} className="primary-btn min-h-[44px]">{actionBusy === "export" ? "…" : (lang === "zh" ? "送出到 Google Sheet" : "Send to Google Sheet")}</button><button type="button" disabled={Boolean(actionBusy)} onClick={()=>setConfirmClear(true)} className="min-h-[44px] rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-60">{actionBusy === "clear" ? "…" : (lang === "zh" ? "清除已有學生資料" : "Clear existing student data")}</button></div></div>
@@ -97,8 +98,8 @@ export default function TeacherDashboard(){
 
     {confirmClear && <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="clear-data-title">
       <section className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-        <h2 id="clear-data-title" className="text-xl font-black text-primary">{lang === "zh" ? "確定清除所有學生資料？" : "Clear all student data?"}</h2>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">{lang === "zh" ? "此操作會永久清空 Firebase 內所有本次考察資料，不能復原。" : "This permanently clears all fieldwork data in Firebase and cannot be undone."}</p>
+        <h2 id="clear-data-title" className="text-xl font-black text-primary">{lang === "zh" ? "清空兩邊資料，開始下一次考察？" : "Clear both stores for the next activity?"}</h2>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">{lang === "zh" ? "此操作會永久清空 Firebase 學生資料、Google Sheet 考察紀錄及分析輸入值，並重設匯出進度。標題、格式及分析公式會保留。請先保存需要保留的分析結果；完成後，學生須重新登入開始新考察。是否清除？" : "Permanently clear Firebase submissions, Google Sheet records and analysis inputs, and reset export tracking. Headings, formatting and analysis formulas are retained. Save any results you need first. Students must log in again. Continue?"}</p>
         <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={()=>setConfirmClear(false)} className="secondary-btn min-h-[44px]">{lang === "zh" ? "否" : "No"}</button><button type="button" onClick={clearAll} className="min-h-[44px] rounded-xl bg-red-700 px-5 py-2 font-bold text-white hover:bg-red-800">{lang === "zh" ? "是" : "Yes"}</button></div>
       </section>
     </div>}

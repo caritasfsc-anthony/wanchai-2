@@ -11,11 +11,13 @@ function doGet(e) {
   catch (error) { return jsonp_({ ok: false, error: String(error) }, e && e.parameter && e.parameter.callback); }
 }
 function doPost(e) {
-  try { return json_({ ok: true, result: handleRequest_(JSON.parse((e && e.postData && e.postData.contents) || "{}")) }); }
+  try { const payload = JSON.parse((e && e.postData && e.postData.contents) || "{}"); return json_({ ok: true, result: payload.action === "reset-fieldwork" ? resetFieldwork_(payload) : handleRequest_(payload) }); }
   catch (error) { return json_({ ok: false, error: String(error) }); }
 }
 function handleRequest_(payload) {
   const action = String(payload.action || "legacy-submit");
+  if (action === "reset-capabilities") return { version: 1 };
+  if (action === "reset-result") return JSON.parse(PropertiesService.getScriptProperties().getProperty("reset-" + String(payload.requestId || "")) || '{"complete":false}');
   const ss = SpreadsheetApp.openById(FIELDWORK_SPREADSHEET_ID); ensureSheets_(ss);
   if (action === "login") return login_(ss, payload);
   if (action === "group-data") return groupData_(ss, requireSession_(payload));
@@ -24,7 +26,7 @@ function handleRequest_(payload) {
   if (action === "clear-all") return clearAll_(ss, requireTeacher_(payload));
   if (action === "export") return exportToAnalysis_(ss, requireTeacher_(payload));
   if (action === "export-status") return exportStatus_(ss);
-  if (action === "legacy-submit") return legacySubmit_(ss, parseSubmission_(payload.submission || payload), payload.fingerprint);
+  if (action === "legacy-submit") return legacySubmit_(ss, parseSubmission_(payload.submission || payload), payload.fingerprint, payload.generation);
   throw new Error("Unknown action");
 }
 function ensureSheets_(ss) {
@@ -66,20 +68,42 @@ function saveGroupSubmission_(ss, session, payload) {
 function clearAll_(ss) {
   [GROUP_DATA_SHEET, GROUP_HISTORY_SHEET, FIELDWORK_RAW_SHEET, EXPORT_STATUS_SHEET].forEach(function(name) { const sheet = ss.getSheetByName(name); if (sheet && sheet.getLastRow() > 1) sheet.deleteRows(2, sheet.getLastRow() - 1); });
   const building = ss.getSheetByName("Part 1 Building"); if (building) building.getRange("B6:I9").clearContent();
-  const sustainability = ss.getSheetByName("Part 2 Sustainability"); if (sustainability) sustainability.getRange("C6:J23").clearContent();
-  const shop = ss.getSheetByName("Part 2 Shop style"); if (shop) shop.getRange("C6:J33").clearContent();
+  const sustainability = ss.getSheetByName("Part 2 Sustainability"); if (sustainability) sustainability.getRangeList(["C6:J9", "C13:J16", "C20:J23"]).clearContent();
+  const shop = ss.getSheetByName("Part 2 Shop style"); if (shop) shop.getRangeList(["C6:J9", "C14:J17", "C22:J25", "C30:J33"]).clearContent();
   return { cleared: true };
+}
+function resetFieldwork_(payload) {
+  const requestId = String(payload.requestId || "");
+  if (!/^[a-f0-9-]{36}$/.test(requestId)) throw new Error("Invalid reset request");
+  const response = UrlFetchApp.fetch("https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=AIzaSyCUqBRUgwkioy50Ep8bWf-f7xN5iQ_pBow", { method: "post", contentType: "application/json", payload: JSON.stringify({ idToken: String(payload.idToken || "") }), muteHttpExceptions: true });
+  const user = JSON.parse(response.getContentText()).users;
+  if (response.getResponseCode() !== 200 || !user || user.length !== 1 || user[0].email !== "anthonykwok@caritasfsc.edu.hk") throw new Error("Teacher authentication required");
+  const properties = PropertiesService.getScriptProperties(); const key = "reset-" + requestId;
+  const lock = LockService.getScriptLock(); lock.waitLock(10000);
+  try {
+    const previous = properties.getProperty(key); if (previous && JSON.parse(previous).complete) return JSON.parse(previous);
+    const ss = SpreadsheetApp.openById(FIELDWORK_SPREADSHEET_ID);
+    properties.setProperty("fieldwork-export-generation", requestId);
+    clearAll_(ss); SpreadsheetApp.flush();
+    const receipt = { complete: true, requestId: requestId };
+    properties.setProperty(key, JSON.stringify(receipt)); return receipt;
+  } catch (error) { properties.setProperty(key, JSON.stringify({ complete: false, error: String(error) })); throw error; }
+  finally { lock.releaseLock(); }
 }
 function exportToAnalysis_(ss) { const values = ss.getSheetByName(GROUP_DATA_SHEET).getDataRange().getValues().slice(1).map(normalizeSubmission_); values.forEach(function(item) { appendRawSubmission_(ss, item); writeToAnalysisSheets_(ss, item); }); return { count: values.length }; }
 function parseSubmission_(value) { return typeof value === "string" ? JSON.parse(value) : value; }
 function exportStatus_(ss) {
   const sheet = ss.getSheetByName(EXPORT_STATUS_SHEET); const rows = sheet.getLastRow() > 1 ? sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues() : [];
-  const fingerprints = {}; rows.forEach(function(row) { fingerprints[String(row[0])] = String(row[1]); }); return { fingerprints: fingerprints };
+  const fingerprints = {}; rows.forEach(function(row) { fingerprints[String(row[0])] = String(row[1]); }); return { fingerprints: fingerprints, generation: PropertiesService.getScriptProperties().getProperty("fieldwork-export-generation") || "initial" };
 }
-function legacySubmit_(ss, submission, fingerprint) {
+function legacySubmit_(ss, submission, fingerprint, generation) {
   if (!submission || !submission.id) throw new Error("Missing submission"); const lock = LockService.getScriptLock();
   if (!lock.tryLock(10000)) throw new Error("Google Sheet 正在處理另一批資料，請稍後再試");
-  try { appendRawSubmission_(ss, submission); writeToAnalysisSheets_(ss, submission); updateExportStatus_(ss, submission.id, String(fingerprint || submission.submittedAt || "")); return { id: submission.id }; }
+  try {
+    const current = PropertiesService.getScriptProperties().getProperty("fieldwork-export-generation") || "initial";
+    if (String(generation || "initial") !== current) throw new Error("考察已重設，舊匯出已停止。請重新整理教師頁。");
+    appendRawSubmission_(ss, submission); writeToAnalysisSheets_(ss, submission); updateExportStatus_(ss, submission.id, String(fingerprint || submission.submittedAt || "")); SpreadsheetApp.flush(); return { id: submission.id };
+  }
   finally { lock.releaseLock(); }
 }
 function appendRawSubmission_(ss, s) {
